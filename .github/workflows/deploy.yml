@@ -1,0 +1,55 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: chiang-wanan-policy-island
+    steps:
+      - uses: actions/checkout@v4
+
+      # 還沒設定金鑰時直接跳過，避免每次 push 都出現失敗紀錄
+      - name: Check secrets
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare secrets not set; skipping deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 只部署網站本身的檔案
+      - name: Prepare site
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          mkdir dist
+          cp -r index.html styles.css main.js world.js _headers data vendor dist/
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          node-version: 22
+
+      # 第一次部署時建立 Pages 專案；已存在就忽略錯誤
+      - name: Ensure Pages project
+        if: steps.guard.outputs.ready == 'true'
+        run: npx --yes wrangler@4 pages project create "$PROJECT_NAME" --production-branch main || true
+
+      - name: Deploy
+        if: steps.guard.outputs.ready == 'true'
+        run: npx --yes wrangler@4 pages deploy dist --project-name "$PROJECT_NAME" --branch main --commit-dirty=true
