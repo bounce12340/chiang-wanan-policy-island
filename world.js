@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createCrowd } from './people.js';
+import { sceneFor } from './vignettes.js';
 
 export const STATUS_COLORS = {
   done: 0x2e9e5b,
@@ -551,6 +553,201 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     orbMeshes.push(im);
     list.forEach((b, i) => { b.userData.orbMesh = im; b.userData.orbIndex = i; });
   });
+  // ---------- 小人：常駐在各島，符合島的主題 ----------
+  const crowd = createCrowd(scene, 96);
+  const ring = (cx, cz, r, n = 10) => Array.from({ length: n }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * r, cz + Math.sin((i / n) * Math.PI * 2) * r]);
+  const RESIDENTS = {
+    transport: [
+      { anim: 'walk', path: [[-1.8, 1.9], [1.6, 2.2]] },
+      { anim: 'walk', path: [[1.5, 1.6], [-1.7, 1.4]], pathT: 0.4 },
+      { x: -2.0, z: 0.4, anim: 'wave', kid: true },
+    ],
+    development: [
+      { anim: 'jog', path: [[1.0, 0.8], [2.1, 0.3], [1.8, -0.9], [0.9, -0.6]] },
+      { x: 0.4, z: 1.7, anim: 'point', kid: true, rot: -0.5 },
+      { x: 0.8, z: 1.9, anim: 'cheer', kid: true },
+    ],
+    industry: [
+      { x: 1.6, z: 1.8, anim: 'point', shirt: '#2b2f45', rot: -2.4 },
+      { x: -0.4, z: 2.1, anim: 'walk', path: [[-0.6, 2.2], [1.4, 2.2]], shirt: '#ffffff' },
+    ],
+    housing: [
+      { anim: 'walk', path: [[-1.9, 1.6], [0.6, 1.9]] },
+      { anim: 'walk', path: [[0.5, 1.7], [-1.8, 1.4]], pathT: 0.5, senior: true },
+      { x: 1.0, z: 2.1, anim: 'wave', kid: true },
+    ],
+    family: [
+      { anim: 'jog', kid: true, path: ring(0.8, 1.0, 0.9, 12) },
+      { anim: 'jog', kid: true, path: ring(0.8, 1.0, 0.9, 12), pathT: 0.5 },
+      { x: -1.6, z: 1.7, anim: 'wave', kid: true },
+      { x: -0.8, z: 1.9, anim: 'give', rot: -1.0 },
+    ],
+    care: [
+      { anim: 'walk', senior: true, path: [[-1.8, 0.8], [-1.4, 1.9], [0.4, 2.1]] },
+      { x: 0.6, z: 1.6, anim: 'idle', shirt: '#20a39e', rot: 0.6 },
+      { x: -1.3, z: 1.4, anim: 'sit', senior: true, y: 0.1 },
+    ],
+    safety: [
+      { x: -0.4, z: 0.9, anim: 'salute', shirt: '#2f4f8a', pants: '#1f2a44' },
+      { x: 0.3, z: 1.1, anim: 'idle', shirt: '#2b2f45' },
+    ],
+    environment: [
+      { anim: 'jog', path: [[-1.9, 1.3], [-0.6, 2.2], [1.0, 2.0], [2.1, 0.8], [1.0, 1.2], [-0.8, 1.5]] },
+      { x: -0.9, z: 0.9, anim: 'point', kid: true, rot: -2.6 },
+    ],
+    culture: Array.from({ length: 8 }, (_, i) => {
+      const a = Math.PI * 0.18 + (i / 7) * Math.PI * 0.62;
+      return { x: 0.6 + Math.cos(a) * 1.95, z: 0.3 + Math.sin(a) * 1.95, rot: Math.atan2(Math.cos(a), Math.sin(a)), anim: 'cheer', phase: i * 0.8, kid: i % 3 === 0 };
+    }),
+  };
+  islands.forEach((isle, id) => {
+    (RESIDENTS[id] || []).forEach((o) => crowd.add(isle.root, { ...o, y: TOP + (o.y || 0) }));
+  });
+
+  // ---------- 政策小場景：浮在島上方的小舞台 ----------
+  const STAGE_Y = 7.2;
+  const STAGE_TOP = 0.725; // 舞台草地表面（相對舞台原點）
+  const kitMatCache = new Map();
+  const kitGlowCache = new Map();
+  const kitMat = (c) => {
+    if (c === 'window') return windowMat;
+    if (!kitMatCache.has(c)) kitMatCache.set(c, mat(c));
+    return kitMatCache.get(c);
+  };
+  const kitGlow = (c) => {
+    if (!kitGlowCache.has(c)) kitGlowCache.set(c, glow(c, 0.6));
+    return kitGlowCache.get(c);
+  };
+  let stage = null;
+
+  function makeKit(st, color) {
+    const content = st.content;
+    const place = (mesh, x, y, z, o = {}) => {
+      if (o.rx) mesh.rotation.x = o.rx;
+      if (o.rz) mesh.rotation.z = o.rz;
+      if (o.ry || o.rot) mesh.rotation.y = o.ry || o.rot;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      if (o.dyn) mesh.userData.dynamic = true;
+      (o.parent || content).add(mesh);
+      return mesh;
+    };
+    // fade：需要逐漸淡出的物件用獨立的半透明材質，換場景時一併釋放
+    const mOf = (c, o) => {
+      if (o.fade) {
+        const m = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 1, depthWrite: false });
+        st.ownMaterials.push(m);
+        return m;
+      }
+      return o.glow ? kitGlow(c) : kitMat(c);
+    };
+    return {
+      color,
+      box(w, h, d, c, x, y, z, o = {}) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mOf(c, o));
+        m.position.set(x, y + (o.rx || o.rz ? 0 : h / 2), z);
+        return place(m, x, y, z, o);
+      },
+      cyl(rt, rb, h, seg, c, x, y, z, o = {}) {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mOf(c, o));
+        m.position.set(x, y + (o.rx || o.rz ? 0 : h / 2), z);
+        return place(m, x, y, z, o);
+      },
+      sphere(r, c, x, y, z, o = {}) {
+        const g = o.half ? new THREE.SphereGeometry(r, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2) : new THREE.SphereGeometry(r, 10, 8);
+        const m = new THREE.Mesh(g, mOf(c, o));
+        m.position.set(x, y, z);
+        if (o.sy) m.scale.y = o.sy;
+        return place(m, x, y, z, o);
+      },
+      tree(x, z, s = 1) {
+        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.06 * s, 0.08 * s, 0.35 * s, 5), M.trunk);
+        t.position.set(x, 0.175 * s, z);
+        const f = new THREE.Mesh(new THREE.ConeGeometry(0.36 * s, 0.9 * s, 6), M.leaf);
+        f.position.set(x, 0.75 * s, z);
+        [t, f].forEach((m) => { m.castShadow = true; content.add(m); });
+      },
+      group(x = 0, y = 0, z = 0, rot = 0, parent = null, _dyn = true, rz = 0) {
+        const g = new THREE.Group();
+        g.position.set(x, y, z);
+        g.rotation.set(0, rot, rz);
+        g.userData.dynamic = true;
+        (parent || content).add(g);
+        return g;
+      },
+      person(o = {}) {
+        const p = crowd.add(content, o);
+        if (p) st.people.push(p);
+        return p || { handR: new THREE.Vector3(), handL: new THREE.Vector3() };
+      },
+      anim(fn) { st.anims.push(fn); },
+      toLocal(v) { return content.worldToLocal(v.clone()); },
+      attach(mesh, person, hand = 'handR') {
+        st.anims.push(() => { mesh.position.copy(content.worldToLocal(person[hand].clone())); });
+        return mesh;
+      },
+    };
+  }
+
+  function disposeStage() {
+    if (!stage) return;
+    stage.people.forEach((p) => crowd.remove(p));
+    scene.remove(stage.root);
+    stage.root.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
+    stage.ownMaterials.forEach((m) => m.dispose());
+    stage.beam.material.dispose();
+    islands.get(stage.themeId)?.label.classList.remove('is-hidden-label');
+    stage = null;
+  }
+
+  function showVignette(themeId, itemId) {
+    const isle = islands.get(themeId);
+    if (!isle) return;
+    if (stage && stage.itemId === itemId) return;
+    disposeStage();
+    const { build, opts } = sceneFor(themeId, itemId);
+    if (!build) return;
+    const root = new THREE.Group();
+    root.position.set(isle.pos.x, STAGE_Y, isle.pos.z);
+    root.rotation.y = isle.root.rotation.y;
+    scene.add(root);
+    const base = islandBase(2.15, 777 + itemId.length * 13).group;
+    base.scale.set(1, 0.5, 1);
+    root.add(base);
+    // 光束：從島連到舞台
+    const beam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.18, STAGE_Y - 1.45 - 1.0, 8, 1, true),
+      new THREE.MeshBasicMaterial({ color: isle.theme.color, transparent: true, opacity: 0.35, depthWrite: false }),
+    );
+    beam.position.y = -(STAGE_Y - 1.45 - 1.0) / 2 - 1.0;
+    beam.userData.dynamic = true;
+    root.add(beam);
+    const content = new THREE.Group();
+    content.position.y = STAGE_TOP;
+    root.add(content);
+    stage = { root, content, themeId, itemId, people: [], anims: [], ownMaterials: [], t0: elapsed, beam };
+    root.updateMatrixWorld(true);
+    try {
+      build(makeKit(stage, isle.theme.color), opts);
+    } catch (err) {
+      console.warn('場景建立失敗', itemId, err);
+    }
+    mergeStatic(base);
+    mergeStatic(content);
+    root.scale.setScalar(0.01);
+    isle.label.classList.add('is-hidden-label');
+  }
+
+  function updateStage(dt) {
+    if (!stage) return;
+    const t = elapsed - stage.t0;
+    const k = Math.min(t / 0.45, 1);
+    const s = k < 1 ? 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2) : 1; // 輕微回彈
+    stage.root.scale.setScalar(Math.max(0.01, s));
+    stage.root.position.y = STAGE_Y + Math.sin(elapsed * 0.9) * 0.08;
+    for (const fn of stage.anims) fn(t);
+  }
+
   const hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
   function syncBeacons() {
     for (const b of beaconList) {
@@ -748,7 +945,9 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const small = window.matchMedia('(max-width: 760px)').matches;
     const panel = document.getElementById('panel');
     if (!focused || !panel) { inset.tx = 0; inset.ty = 0; return; }
-    if (small) { inset.tx = 0; inset.ty = panel.offsetHeight / 2; } else { inset.tx = (panel.offsetWidth + 12) / 2; inset.ty = 0; }
+    // 手機：面板在下、標題列在上，焦點放在兩者之間；桌機：面板在右
+    const bar = document.querySelector('.topbar');
+    if (small) { inset.tx = 0; inset.ty = (panel.offsetHeight - (bar ? bar.offsetHeight + 8 : 0)) / 2; } else { inset.tx = (panel.offsetWidth + 12) / 2; inset.ty = 0; }
   }
   function applyInset(dtSec) {
     const k = 1 - Math.exp(-dtSec * 4); // 以實際時間平滑，約 1 秒到位
@@ -766,15 +965,16 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     controls.autoRotate = false;
     const small = window.matchMedia('(max-width: 760px)').matches;
     const out = isle.pos.clone().normalize();
-    const target = isle.pos.clone().setY(2.6);
-    // 從島的外側斜上方看向島，背景是其他島與中央臺北
-    const camPos = isle.pos.clone().add(out.multiplyScalar(small ? 17 : 13.5)).setY(small ? 17 : 11);
+    // 鏡頭對準島上方的政策小舞台，島本身在畫面下緣
+    const target = isle.pos.clone().setY(STAGE_Y + 1.1);
+    const camPos = isle.pos.clone().add(out.multiplyScalar(small ? 10.5 : 6.6)).setY(STAGE_Y + (small ? 4.8 : 3.0));
     setInset();
     flyTo(camPos, target);
   }
 
   function resetView() {
     focused = null;
+    disposeStage();
     setInset();
     flyTo(HOME.pos, HOME.target, 1.4);
     if (!reduceMotion) setTimeout(() => { if (!focused) controls.autoRotate = true; }, 1500);
@@ -939,9 +1139,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       controls.target.lerpVectors(tween.fromT, tween.toT, k);
       if (raw >= 1) tween = null;
     }
+    updateStage(dt);
     controls.update();
     applyInset(rawDt);
     scene.updateMatrixWorld();
+    crowd.update(elapsed);
     syncBeacons();
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
@@ -983,5 +1185,5 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   flyTo(HOME.pos, HOME.target, 2.4);
   applyNight(0);
 
-  return { focusTheme, resetView, setStatusFilter, setNight, setPaused, flashItem, labelLayer: labelRenderer.domElement };
+  return { focusTheme, resetView, setStatusFilter, setNight, setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement };
 }

@@ -110,6 +110,7 @@ a { color: inherit; }
 .isle-label small { font-family: var(--font-num); font-weight: 500; color: #3d4a66; }
 .isle-label:hover, .isle-label.is-hover { transform: translateY(-3px) scale(1.05); }
 .isle-label.is-dim { opacity: .35; }
+.isle-label.is-hidden-label { opacity: 0; pointer-events: none; }
 .center-label { pointer-events: none; text-align: center; color: #14213d; text-shadow: 0 1px 0 rgba(255,255,255,.8); }
 .center-label b { display: block; font-size: 15px; font-weight: 900; letter-spacing: .2em; }
 .center-label span { font-size: 11px; letter-spacing: .1em; }
@@ -145,6 +146,11 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
   transition: box-shadow .3s, border-color .3s;
 }
 .item.is-flash { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(47,125,211,.25); }
+.panel .item { cursor: pointer; }
+.panel .item.is-staged { border-color: color-mix(in srgb, var(--ink) 55%, transparent); }
+.panel .item.is-staged .item-top::after {
+  content: "▲ 場景演出中"; order: 3; font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-left: 8px;
+}
 .item.is-filtered { display: none; }
 .item-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #fff; white-space: nowrap; }
@@ -237,7 +243,7 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
   .chips { max-width: none; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .chip { flex: none; }
   .panel {
-    top: auto; left: 0; right: 0; bottom: 0; width: 100%; height: 72vh; border-radius: 22px 22px 0 0;
+    top: auto; left: 0; right: 0; bottom: 0; width: 100%; height: 54vh; border-radius: 22px 22px 0 0;
     transform: translateY(105%);
   }
   .panel-grip { display: block; width: 44px; height: 5px; border-radius: 9px; background: var(--line); margin: 8px auto 0; }

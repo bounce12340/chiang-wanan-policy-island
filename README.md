@@ -15,6 +15,8 @@ The site's interface and content are in Traditional Chinese.
   - **Planned** — proposed by the city or still being pursued, not yet approved
   - **Re-election pledge** — future commitments made during the campaign
 - **Three views:** 3D islands, list, and timeline, with a status filter and a day/night toggle
+- **Policy scenes:** every item has its own animated mini-diorama that floats above its island, e.g. an adult handing a child a bottle of milk for the free-milk program, or a cheering crowd around the Taipei Dome. The scene follows whichever card you are reading in the panel.
+- **Island residents:** small animated people on each island that match its theme
 - **Deep links** to any island or item, e.g. `#/transport` or `#/housing/housing-happy`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
 
@@ -29,10 +31,23 @@ As of that date, no complete re-election platform had been published, so the ple
 
 ## Tech
 
-- Native ES modules, no build step
-- [Three.js](https://threejs.org/) r180, vendored in `vendor/three/` (MIT)
+- Native ES modules, no build step at deploy time
+- [Three.js](https://threejs.org/) r180 (MIT), as a tree-shaken bundle in `vendor/three-lite.js` (529 KB, 136 KB gzipped)
 - All 3D models are generated in code; there are no external model files
+  - `world.js`: islands, camera, interaction, quality tiers
+  - `people.js`: all animated people share 7 instanced meshes, so the crowd size does not add draw calls
+  - `vignettes.js`: the per-item scene library and the item → scene mapping
+- Mobile performance: static meshes are merged per island, water waves run in a vertex shader, rendering pauses in list/timeline views and background tabs, idle phones are capped at 30 fps, and quality steps down automatically on slow devices (`?quality=high` or `?quality=low` overrides this)
 - Devices without WebGL fall back to the list view
+
+### Rebuilding Three.js
+
+If you use a new Three.js class in the 3D code, regenerate the bundle:
+
+```bash
+npm install
+npm run build:three
+```
 
 ### Local preview
 

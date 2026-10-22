@@ -117,9 +117,12 @@ async function boot() {
     panel.setAttribute('aria-hidden', 'false');
     panelInner.scrollTop = 0;
     world?.focusTheme(id);
+    stagedItem = null;
+    stageItem(itemId || sorted[0]?.id);
     if (itemId) {
       const el = document.getElementById(`item-${itemId}`);
       if (el) {
+        lockStage = true;
         requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
         el.classList.add('is-flash');
         setTimeout(() => el.classList.remove('is-flash'), 1800);
@@ -138,9 +141,39 @@ async function boot() {
     history.replaceState(null, '', location.pathname + location.search);
   }
 
+  // 小舞台演出「目前正在讀的那一項」：捲動面板時跟著換場景，點卡片也會切換
+  let stagedItem = null;
+  function stageItem(itemId) {
+    if (!currentTheme || !itemId || itemId === stagedItem) return;
+    stagedItem = itemId;
+    world?.showVignette(currentTheme, itemId);
+    panelInner.querySelectorAll('.item').forEach((el) => el.classList.toggle('is-staged', el.id === `item-${itemId}`));
+  }
+  let scrollRaf = 0;
+  // 程式自動捲動到指定項目時，先鎖住場景；等使用者自己捲動或觸控才交回給捲動偵測
+  let lockStage = false;
+  ['wheel', 'touchstart', 'pointerdown', 'keydown'].forEach((ev) => panelInner.addEventListener(ev, () => { lockStage = false; }, { passive: true }));
+  panelInner.addEventListener('scroll', () => {
+    if (lockStage) return;
+    cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(() => {
+      const box = panelInner.getBoundingClientRect();
+      const line = box.top + box.height * 0.3;
+      let best = null, bestD = Infinity;
+      panelInner.querySelectorAll('.item:not(.is-filtered)').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const d = r.top <= line && r.bottom >= line ? 0 : Math.min(Math.abs(r.top - line), Math.abs(r.bottom - line));
+        if (d < bestD) { bestD = d; best = el; }
+      });
+      if (best) stageItem(best.id.replace(/^item-/, ''));
+    });
+  }, { passive: true });
+
   panelInner.addEventListener('click', (e) => {
     const go = e.target.closest('[data-go]');
-    if (go) openTheme(go.dataset.go);
+    if (go) { openTheme(go.dataset.go); return; }
+    const card = e.target.closest('.item');
+    if (card && !e.target.closest('a')) stageItem(card.id.replace(/^item-/, ''));
   });
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
