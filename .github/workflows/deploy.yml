@@ -38,7 +38,7 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         run: |
           mkdir dist
-          cp -r index.html styles.css main.js world.js _headers data vendor dist/
+          cp -r index.html styles.css *.js _headers data vendor dist/
 
       - uses: actions/setup-node@v4
         if: steps.guard.outputs.ready == 'true'
