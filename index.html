@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>臺北施政島｜蔣萬安市政與政見資訊地圖（非官方整理）</title>
+  <meta name="description" content="以 3D 島嶼互動方式整理蔣萬安任內臺北市政與 2026 連任政見，每一項皆附公開來源。非官方、與任何候選人或政黨無關。">
+  <meta name="theme-color" content="#14213d">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:title" content="臺北施政島｜蔣萬安市政與政見資訊地圖（非官方整理）">
+  <meta property="og:description" content="點一座島，看一個政策領域：已完成、進行中、規劃中與連任政見，全部附來源。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 40c8-10 40-10 48 0-6 10-42 10-48 0z' fill='%2320a39e'/%3E%3Ccircle cx='32' cy='24' r='10' fill='%23f08c3a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">
+    { "imports": {
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
+    } }
+  </script>
+</head>
+<body>
+  <div id="stage" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>臺北施政島</h1>
+        <p class="brand-sub">蔣萬安市政與政見資訊地圖・<strong>非官方整理</strong></p>
+      </div>
+    </div>
+    <nav class="views" aria-label="檢視模式">
+      <button class="view-btn is-active" data-view="island" aria-pressed="true">島嶼</button>
+      <button class="view-btn" data-view="list" aria-pressed="false">清單</button>
+      <button class="view-btn" data-view="timeline" aria-pressed="false">時間軸</button>
+    </nav>
+    <div class="tools">
+      <button id="btn-daynight" class="icon-btn" aria-label="切換日夜">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5z"/></svg>
+      </button>
+      <button id="btn-about" class="icon-btn" aria-label="關於本站">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <p class="hero-kicker">2022–2026 任期 ・ 2026 連任選舉</p>
+    <h2>一座島，一個政策領域。</h2>
+    <p class="hero-body">點選任何一座島，查看該領域的施政項目與狀態。每一項都附上公開來源，方便你自己查證。</p>
+    <div class="hero-stats" id="hero-stats"></div>
+    <p class="hero-note" id="hero-note"></p>
+    <button class="cta" id="btn-start">開始探索</button>
+  </section>
+
+  <aside class="legend" id="legend" aria-label="狀態篩選">
+    <p class="legend-title">依狀態篩選</p>
+    <div class="chips" id="status-chips"></div>
+  </aside>
+
+  <aside class="panel" id="panel" aria-live="polite" aria-hidden="true">
+    <div class="panel-grip" aria-hidden="true"></div>
+    <button class="panel-close" id="panel-close" aria-label="關閉">×</button>
+    <div class="panel-inner" id="panel-inner"></div>
+  </aside>
+
+  <main class="overlay-view" id="list-view" hidden>
+    <div class="overlay-inner" id="list-inner"></div>
+  </main>
+  <main class="overlay-view" id="timeline-view" hidden>
+    <div class="overlay-inner" id="timeline-inner"></div>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+  <dialog id="about" class="about">
+    <form method="dialog"><button class="panel-close" aria-label="關閉">×</button></form>
+    <h2>關於本站</h2>
+    <p><strong>這是一個非官方的資訊整理網站</strong>，與蔣萬安本人、其競選團隊、臺北市政府或任何政黨均無關聯，也未接受任何委託或資助。</p>
+    <h3>整理方式</h3>
+    <ul>
+      <li>內容取自臺北市政府公開資訊與主流媒體報導，每一項都附來源連結與日期。</li>
+      <li>狀態分為四類：<b>已完成</b>（已實施或啟用）、<b>進行中</b>（施工或推動中）、<b>規劃中</b>（市府提議、爭取中，尚未定案）、<b>連任政見</b>（競選期間提出的未來承諾）。</li>
+      <li>只描述做了什麼、提了什麼，不評價政策好壞。政策效果請參考各方評論與官方數據。</li>
+    </ul>
+    <h3>選舉背景</h3>
+    <div id="about-campaign"></div>
+    <h3>注意事項</h3>
+    <ul>
+      <li>資料截至 <span id="about-updated"></span>，之後的變動不會自動更新。</li>
+      <li>媒體報導可能與官方最終數字有落差，引用前請點開原始來源確認。</li>
+      <li>發現錯誤？歡迎到 GitHub repo 開 issue。</li>
+    </ul>
+    <p class="about-tech">3D 場景以 Three.js 原創製作。互動概念參考了「政策島」類型的資訊視覺化網站，程式碼與模型皆為本站自行撰寫。</p>
+    <p class="about-links"><a id="repo-link" href="#" target="_blank" rel="noopener">GitHub 原始碼</a></p>
+  </dialog>
+
+  <div class="loading" id="loading">
+    <div class="loading-isle" aria-hidden="true"></div>
+    <p>島嶼浮出水面中…</p>
+  </div>
+
+  <footer class="footnote">非官方資訊整理｜資料截至 <span id="foot-updated"></span>｜每項皆附來源</footer>
+
+  <noscript><p class="noscript">本站需要 JavaScript。請啟用後重新整理。</p></noscript>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
