@@ -179,7 +179,9 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
 .tl-row::before { content: ""; position: absolute; left: -7px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: var(--dot, #999); border: 2px solid var(--paper); }
 .tl-when { font-family: var(--font-num); font-size: 13px; color: var(--ink-soft); padding-top: 18px; }
 .tl-row .item { margin-top: 6px; }
-.tl-theme { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.tl-theme { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-right: auto; }
+.tl-row .item-date { display: none; }
+.tl-row .item-top { justify-content: flex-start; }
 
 /* ---------- tooltip ---------- */
 .tooltip {
