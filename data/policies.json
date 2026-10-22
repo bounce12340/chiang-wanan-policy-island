@@ -547,7 +547,7 @@
           "date": "2024-09-19",
           "facts": [
             "對象：婚後 2 年內或育有 0–6 歲子女家庭",
-            "租金低於市價 7 成，另依所得補貼 3,000–11,000 元",
+            "租金約為市價 7 折以下，另依所得補貼 3,000–11,000 元",
             "至 2026-01-31 釋出 7 處 175 戶，累計申請 6,987 件"
           ],
           "sources": [
@@ -569,8 +569,8 @@
           "status": "done",
           "date": "2026-03-20",
           "facts": [
-            "40 歲以下單身青年每月加碼 1,000 元",
-            "45 歲以下新婚無子女每月加碼 2,500 元",
+            "未滿 40 歲單身青年每月加碼 1,000 元",
+            "45 歲以下已婚無子女家庭每月加碼 2,500 元",
             "育有 12 歲以下子女，每名每月加碼 1,000 元"
           ],
           "sources": [
@@ -588,8 +588,7 @@
           "date": "2025",
           "facts": [
             "標籤：歡迎長者、學生、青年、設籍、租補",
-            "房東須確實接受該族群才可標示",
-            "租給租補戶的房東可減免地價稅、房屋稅"
+            "配合租金補貼的房東，每戶最高可減免地價稅、房屋稅 1 萬元"
           ],
           "sources": [
             {
@@ -606,7 +605,6 @@
           "date": "2025-11-25",
           "facts": [
             "近 3 年都更報核 353 件，年均 117 件",
-            "市府報告稱含危老年均核定 245 件",
             "2023 年公辦都更第一階段門檻由 90% 降至 75%"
           ],
           "sources": [
@@ -724,6 +722,11 @@
           ],
           "sources": [
             {
+              "url": "https://udn.com/news/story/6885/8604112",
+              "publisher": "聯合報",
+              "published": "2025-03-13"
+            },
+            {
               "url": "https://udn.com/news/story/7323/9668555",
               "publisher": "聯合報",
               "published": "2026-08-04"
@@ -732,7 +735,7 @@
         },
         {
           "id": "family-worktime",
-          "title": "父母育兒減少工時試辦",
+          "title": "父母育兒減少工時補助",
           "status": "done",
           "date": "2026-03-01",
           "facts": [
@@ -766,7 +769,7 @@
             {
               "url": "https://dosw.gov.taipei/cp.aspx?n=ACD77E2297887D0B",
               "publisher": "臺北市社會局",
-              "published": "2026-10-22"
+              "published": "2026-01-02"
             }
           ]
         },
@@ -796,23 +799,18 @@
         {
           "id": "family-food-safety",
           "title": "午餐食安：三級停餐制度與廚房改善",
-          "status": "proposal",
+          "status": "in_progress",
           "date": "2026-10-21",
           "facts": [
             "一級：波及 5 校以上或 50 人以上就醫等，停餐至少 21 天",
             "規劃 3 年投入 1.4 億元改善 38 校廚房",
-            "已完成 13 所國小廚房改善"
+            "今年已完成 13 所國小廚房升級"
           ],
           "sources": [
             {
               "url": "https://www.cna.com.tw/news/aipl/202610210062.aspx",
               "publisher": "中央社",
               "published": "2026-10-21"
-            },
-            {
-              "url": "https://www.mdnkids.com/content.asp?Link_String_=24AM00000YWRBWR",
-              "publisher": "國語日報",
-              "published": "2026-10-22"
             }
           ]
         },
@@ -824,19 +822,24 @@
           "facts": [
             "校長每月加發 3,000、主任 2,000、組長 1,000 元",
             "追溯自 2025-09-01，約 4,313 人受惠",
-            "2026-08-01 起公立國中小增約 303 名行政人力"
+            "2026-08-01 起公立國中小增置 303 名行政人力"
           ],
           "sources": [
             {
               "url": "https://udn.com/news/story/6885/9553381",
               "publisher": "中央社（聯合新聞網）",
               "published": "2026-06-08"
+            },
+            {
+              "url": "https://www.peoplenews.tw/?p=12026",
+              "publisher": "民報",
+              "published": "2026-01-14"
             }
           ]
         },
         {
           "id": "family-ai-edu",
-          "title": "AI 教育城市與教育白皮書 2.0",
+          "title": "AI 教育政策白皮書與教育白皮書 2.0",
           "status": "proposal",
           "date": "2026-07-03",
           "facts": [
@@ -849,6 +852,11 @@
               "url": "https://udn.com/news/story/7323/9605903",
               "publisher": "聯合報",
               "published": "2026-07-04"
+            },
+            {
+              "url": "https://udn.com/news/story/7323/9549703",
+              "publisher": "聯合報",
+              "published": "2026-06-06"
             }
           ]
         }
@@ -942,17 +950,17 @@
         },
         {
           "id": "care-hospital-ai",
-          "title": "北市聯醫 AI 門診與心血管救治整合",
+          "title": "北市聯醫 AI 心電圖與心血管救治整合",
           "status": "in_progress",
           "date": "2026-09-17",
           "facts": [
-            "AI 智慧糖腎門診：AI 語音初診、整合檢驗與用藥資料",
+            "導入 AI 心電圖輔助判讀，協助辨識疑似急性心肌梗塞等高風險病人",
             "中興院區設西區急重症心血管中心"
           ],
           "sources": [
             {
               "url": "https://health.gov.taipei/News_Content.aspx?n=BB5A41BA1E6CA260&sms=72544237BBE4C5F6&s=68EA79645BEBD7DC",
-              "publisher": "臺北市衛生局",
+              "publisher": "臺北市立聯合醫院",
               "published": "2026-09-17"
             }
           ]
@@ -964,7 +972,7 @@
           "date": "2026-06-01",
           "facts": [
             "2026-01 宣布推無菸城市，原則禁止、例外開放",
-            "西門町 2026-06-01 成為全面無菸商圈",
+            "西門町商圈 2026-06-01 起除吸菸區外全面禁菸",
             "全市指定吸菸區 267 處，負壓式 12 處（2026-08）"
           ],
           "sources": [
@@ -977,6 +985,11 @@
               "url": "https://cna.com.tw/news/aloc/202608270313.aspx",
               "publisher": "中央社",
               "published": "2026-08-27"
+            },
+            {
+              "url": "https://www.taiwannews.com.tw/zh/news/6373200",
+              "publisher": "台灣英文新聞",
+              "published": ""
             }
           ]
         }
