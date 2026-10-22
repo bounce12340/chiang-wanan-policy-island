@@ -1,40 +1,65 @@
-# 臺北施政島｜蔣萬安市政與政見資訊地圖（非官方整理）
+# Taipei Policy Islands
 
-以 3D 島嶼互動方式，整理臺北市長蔣萬安 2022–2026 任期的施政項目，以及市府已公布的規劃。每一項都附上公開來源與日期。
+An interactive 3D map of Taipei Mayor Chiang Wan-an's policy record for the 2022–2026 term, plus plans the city government has announced. Every item links to a public source with its date.
 
-> **非官方資訊整理。** 本站與蔣萬安本人、其競選團隊、臺北市政府或任何政黨均無關聯，也未接受任何委託或資助。
+> **Unofficial and independent.** This project has no affiliation with Chiang Wan-an, his campaign, the Taipei City Government, or any political party. It received no commission or funding.
 
-## 內容
+The site's interface and content are in Traditional Chinese.
 
-- 9 座政策島：交通、城市發展、產業科技、居住、育兒教育、長者醫療、安全韌性、環境永續、文化運動
-- 每個項目標示狀態：已完成／進行中／規劃中／連任政見
-- 三種檢視：3D 島嶼、清單、時間軸
-- 資料集中在 [`data/policies.json`](data/policies.json)，資料截至 2026-10-23
+## What's inside
 
-## 技術
+- **9 policy islands:** transport, urban development, industry & tech, housing, family & education, senior & health care, safety & resilience, environment, culture & sports
+- **59 policy items, 99 sources**, each tagged with a status:
+  - **Done** — implemented or opened
+  - **In progress** — under construction or being rolled out
+  - **Planned** — proposed by the city or still being pursued, not yet approved
+  - **Re-election pledge** — future commitments made during the campaign
+- **Three views:** 3D islands, list, and timeline, with a status filter and a day/night toggle
+- **Deep links** to any island or item, e.g. `#/transport` or `#/housing/housing-happy`
+- **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
 
-- 原生 ES modules，沒有建置步驟
-- [Three.js](https://threejs.org/) r180（MIT，放在 `vendor/three/`）
-- 3D 模型全部以程式碼產生，沒有外部模型檔
-- 不支援 WebGL 的裝置會自動改用清單檢視
+As of that date, no complete re-election platform had been published, so the pledge category is empty. The site states this on its home screen.
 
-本機預覽：
+## How the data was compiled
+
+- Sources are Taipei City Government publications and mainstream news outlets.
+- After the initial research, independent reviewers checked every item against its sources. Claims the sources did not support were corrected or removed.
+- Items describe what was done or proposed. They do not judge whether a policy is good or bad.
+- News reports may differ from final official figures, so check the original source before citing anything.
+
+## Tech
+
+- Native ES modules, no build step
+- [Three.js](https://threejs.org/) r180, vendored in `vendor/three/` (MIT)
+- All 3D models are generated in code; there are no external model files
+- Devices without WebGL fall back to the list view
+
+### Local preview
 
 ```bash
 python3 -m http.server 8000
-# 開啟 http://localhost:8000
+# then open http://localhost:8000
 ```
 
-## 部署
+## Deployment
 
-靜態網站，部署在 Cloudflare Pages。`_headers` 設定基本安全標頭。
+This is a static site deployed to Cloudflare Pages. `_headers` sets basic security headers, including a Content-Security-Policy.
 
-## 資料更正
+The workflow at `.github/workflows/deploy.yml` deploys on every push to `main` once two repository secrets are set:
 
-發現錯誤或過時資訊，請開 issue 並附上來源連結。
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | A Cloudflare API token created from the "Edit Cloudflare Pages" template |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
 
-## 授權
+If the secrets are missing, the deploy steps are skipped instead of failing.
 
-- 程式碼：MIT License
-- 資料整理（`data/policies.json`）：CC BY 4.0；各項原始內容的權利屬於各來源
-- Three.js：MIT License（見 `vendor/three/LICENSE`）
+## Corrections
+
+If you find an error or outdated information, please open an issue and include a source link.
+
+## License
+
+- **Code:** MIT License
+- **Data compilation** (`data/policies.json`): CC BY 4.0. Rights to the original content belong to each source.
+- **Three.js:** MIT License (see `vendor/three/LICENSE`)
