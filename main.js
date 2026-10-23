@@ -370,8 +370,17 @@ async function boot() {
     });
   } catch (err) {
     console.warn('3D 場景無法啟動，改用清單檢視：', err);
-    document.querySelector('[data-view="island"]').disabled = true;
+    const islandBtn = document.querySelector('[data-view="island"]');
+    islandBtn.disabled = true;
+    islandBtn.title = '3D 島嶼無法在這個瀏覽器啟動';
     setView('list');
+    // 告訴使用者發生什麼事，而不是只把按鈕變灰
+    const note = document.createElement('div');
+    note.className = 'fallback-note';
+    note.setAttribute('role', 'status');
+    note.innerHTML = '3D 島嶼無法啟動，已改用清單檢視。可以試著<button type="button">重新整理</button>；若仍無法使用，可能是瀏覽器不支援 WebGL。';
+    note.querySelector('button').addEventListener('click', () => location.reload());
+    document.querySelector('#list-inner').prepend(note);
   }
 
   // ---------- deep link ----------
