@@ -46,6 +46,7 @@
       <button class="view-btn is-active" data-view="island" aria-pressed="true">島嶼</button>
       <button class="view-btn" data-view="list" aria-pressed="false">清單</button>
       <button class="view-btn" data-view="timeline" aria-pressed="false">時間軸</button>
+      <button class="view-btn" data-view="pledges" aria-pressed="false">政見兌現</button>
     </nav>
     <div class="tools">
       <div class="tod" role="group" aria-label="時段">
@@ -68,7 +69,10 @@
     <p class="hero-body">點選任何一座島，查看該領域的施政項目與狀態；也可以點島上的居民，或拖動上方的任期時間軸。每一項都附上公開來源，方便你自己查證。</p>
     <div class="hero-stats" id="hero-stats"></div>
     <p class="hero-note" id="hero-note"></p>
-    <button class="cta" id="btn-start">開始探索</button>
+    <div class="hero-actions">
+      <button class="cta" id="btn-start">開始探索</button>
+      <button class="cta cta-2" id="btn-pledges">看 2022 政見兌現</button>
+    </div>
   </section>
 
   <section class="timebar" id="timebar" aria-label="任期時間軸">
@@ -122,6 +126,9 @@
   <main class="overlay-view" id="timeline-view" hidden>
     <div class="overlay-inner" id="timeline-inner"></div>
   </main>
+  <main class="overlay-view" id="pledges-view" hidden>
+    <div class="overlay-inner" id="pledges-inner"><p class="lead">載入中…</p></div>
+  </main>
 
   <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 
@@ -136,6 +143,7 @@
       <li>只描述做了什麼、提了什麼，不評價政策好壞。政策效果請參考各方評論與官方數據。</li>
       <li>任期時間軸依每一項資料中的事件日期（例如通車、簽約、公布日）排列，不代表該政策開始推動的時間；光點顏色為目前狀態。</li>
       <li>點島上的居民會顯示一項該領域的政策事實，居民只是示意角色，不代表任何真實人物的意見。</li>
+      <li>「政見兌現」頁把 2022 年競選政見逐條對照到查證日為止的公開資料，判斷以政見原文的數字、期限與範圍為準，分為已兌現、部分兌現、進行中、未兌現、無法檢驗、查無資料。「查無資料」代表找不到公開資料，不等於沒有做。</li>
     </ul>
     <h3>選舉背景</h3>
     <div id="about-campaign"></div>
@@ -145,7 +153,7 @@
       <li>媒體報導可能與官方最終數字有落差，引用前請點開原始來源確認。</li>
       <li>發現錯誤？歡迎到 GitHub repo 開 issue。</li>
     </ul>
-    <p class="about-tech">3D 場景以 Three.js 原創製作。互動概念參考了「政策島」類型的資訊視覺化網站，程式碼與模型皆為本站自行撰寫。首頁與各主題的插畫由 Higgsfield（gpt_image_2_5 模型）以 AI 生成，僅作氛圍示意，不代表實際建物或場景。</p>
+    <p class="about-tech">3D 場景以 Three.js 原創製作，在瀏覽器中透過 WebGL 由 GPU 繪製；網站是純靜態檔案，沒有後端或資料庫。互動概念參考了「政策島」類型的資訊視覺化網站，程式碼與模型皆為本站自行撰寫。首頁與各主題的插畫由 Higgsfield（gpt_image_2_5 模型）以 AI 生成，僅作氛圍示意，不代表實際建物或場景。</p>
     <p class="about-links"><a id="repo-link" href="#" target="_blank" rel="noopener">GitHub 原始碼</a></p>
   </dialog>
 

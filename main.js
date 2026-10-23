@@ -6,6 +6,7 @@ const STATUS = {
   pledge: { label: '連任政見', color: '#d0457a' },
 };
 const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
+import { loadPledges, renderPledges, focusPledge } from './pledges.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -63,6 +64,15 @@ async function boot() {
   $('#hero-stats').innerHTML = [
     [themes.length, '政策島'], [allItems.length, '施政項目'], [srcCount, '引用來源'],
   ].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+
+  // 2022 政見兌現：資料另外載入，不擋住首頁
+  loadPledges().then((pd) => {
+    const stat = document.createElement('div');
+    stat.className = 'stat stat-pledge';
+    stat.innerHTML = `<b>${pd.items.length}</b><span>條 2022 政見逐條查證</span>`;
+    $('#hero-stats').append(stat);
+  }).catch((err) => console.warn('政見資料載入失敗', err));
+  $('#btn-pledges').addEventListener('click', () => { setView('pledges'); location.hash = '#/pledges'; });
 
   $('#hero-note').textContent = `截至 ${fmtDate(data.meta.updated)}，尚未查得完整連任政見白皮書；本站以任內施政與市府已公布的規劃為主。`;
 
@@ -302,6 +312,8 @@ async function boot() {
     });
     $('#list-view').hidden = v !== 'list';
     $('#timeline-view').hidden = v !== 'timeline';
+    $('#pledges-view').hidden = v !== 'pledges';
+    if (v === 'pledges') ensurePledges();
     const islandUi = v === 'island';
     document.body.classList.toggle('hide-labels', !islandUi);
     $('#legend').classList.toggle('is-hidden-ui', false);
@@ -310,6 +322,31 @@ async function boot() {
     world?.setPaused(!islandUi);
     applyFilterToDom();
   }
+  // ---------- 2022 政見兌現 ----------
+  let pledgesReady = null;
+  const pledgesRoot = $('#pledges-inner');
+  function itemTitle(themeId, itemId) {
+    const t = byId.get(themeId);
+    if (!t) return null;
+    if (!itemId) return t.name;
+    return t.items.find((i) => i.id === itemId)?.title || null;
+  }
+  function ensurePledges() {
+    if (!pledgesReady) {
+      pledgesReady = loadPledges().then((pd) => {
+        renderPledges(pledgesRoot, pd, {
+          itemTitle,
+          onOpen: (themeId, itemId) => { setView('island'); openTheme(themeId, itemId); },
+        });
+      }).catch((err) => {
+        pledgesReady = null;
+        console.warn(err);
+        pledgesRoot.innerHTML = '<p class="lead">政見資料載入失敗，請重新整理再試一次。</p>';
+      });
+    }
+    return pledgesReady;
+  }
+
   document.querySelector('.views').addEventListener('click', (e) => {
     const b = e.target.closest('.view-btn');
     if (b) setView(b.dataset.view);
@@ -508,6 +545,11 @@ async function boot() {
   // ---------- deep link ----------
   function fromHash() {
     const [, id, itemId] = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/) || [];
+    if (id === 'pledges') {
+      setView('pledges');
+      if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));
+      return;
+    }
     if (id && byId.has(id)) openTheme(id, itemId, { fromHash: true });
   }
   window.addEventListener('hashchange', fromHash);

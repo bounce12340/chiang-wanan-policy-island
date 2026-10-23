@@ -450,3 +450,46 @@ body:has(.panel.is-open) .timebar, .hide-labels .timebar { display: none; }
 .bubbling .isle-label, .bubbling .center-label { opacity: .18; pointer-events: none; }
 /* 手機：介紹卡還在時先不顯示時間軸，避免地圖被上下夾住 */
 @media (max-width: 760px) { body:not(.started) .timebar { display: none; } }
+
+/* ---------- 2022 政見兌現 ---------- */
+.hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cta-2 { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line); }
+.stat b small { font-size: 15px; opacity: .55; margin-left: 2px; }
+.stat-pledge span { max-width: 9em; display: block; line-height: 1.35; }
+.pl-summary-box { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--paper); }
+.pl-bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--paper-2); gap: 2px; }
+.pl-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+.pl-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.pl-legend b { font-family: var(--font-num); color: var(--ink); }
+.pl-asof { margin: 8px 0 0; font-size: 12px; color: var(--ink-soft); }
+.pl-method { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; background: var(--paper-2); font-size: 13.5px; line-height: 1.7; }
+.pl-method summary { cursor: pointer; font-weight: 700; }
+.pl-method ul { margin: 8px 0 0; padding-left: 18px; color: var(--ink-soft); }
+.pl-defs { list-style: none; padding-left: 0 !important; }
+.pl-filters { margin-top: 16px; display: grid; gap: 8px; }
+.pl-filters .chips { max-width: none; }
+.pl-shown { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft); min-height: 1em; }
+.pl-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 6px; }
+.pl { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--paper); display: flex; flex-direction: column; gap: 8px; scroll-margin: 100px; }
+.pl[hidden] { display: none; }
+.pl.is-flash { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(47,125,211,.25); }
+.pl-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pl-cat { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.pl-conf { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--ink-soft); border: 1px dashed var(--line); border-radius: 8px; padding: 2px 6px; }
+.pl-quote { margin: 0; padding: 2px 0 2px 10px; border-left: 3px solid var(--line); font-size: 14.5px; line-height: 1.65; font-weight: 600; }
+.pl-deadline { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.pl-summary { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink-soft); }
+.pl-more { font-size: 13.5px; line-height: 1.65; }
+.pl-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--ink); }
+.pl-more ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink-soft); }
+.pl-crit summary { color: #c8463d; }
+.pl .sources { margin-top: 0; }
+.pl-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+.pl-go { border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); border-radius: 9px; padding: 5px 9px; font-size: 12.5px; font-weight: 700; text-align: left; }
+.pl-origin { font-size: 12px; color: var(--ink-soft); padding: 5px 2px; }
+@media (max-width: 760px) {
+  .pl-list { grid-template-columns: 1fr; }
+  .pl-filters .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .pl-filters .chip { flex: none; }
+  .view-btn { font-size: 13px; padding: 7px 2px; }
+}

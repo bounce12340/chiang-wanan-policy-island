@@ -14,14 +14,20 @@ The site's interface and content are in Traditional Chinese.
   - **In progress** — under construction or being rolled out
   - **Planned** — proposed by the city or still being pursued, not yet approved
   - **Re-election pledge** — future commitments made during the campaign
-- **Three views:** 3D islands, list, and timeline, with a status filter and a day/night toggle
+- **Four views:** 3D islands, list, timeline, and the 2022 pledge tracker, with a status filter and a time-of-day toggle
+- **2022 pledge tracker:** all 83 pledges from Chiang's 2022 mayoral campaign, each checked against public records up to **2026-10-24** and rated against the pledge's own wording (numbers, deadlines, scope):
+  - **Fulfilled**, **Partly fulfilled**, **In progress**, **Not fulfilled**, **Not measurable**, **No public data**
+  - Each pledge shows the original wording, the evidence, criticism where reported, sources, and links to related items on the islands
+  - Pledge list: the 74 items compiled by the [READr pledge database](https://whoareyou.readr.tw/politics/443), plus 11 major pledges from news coverage, with 2 duplicates merged
+  - Achievements of the previous administration and nationwide central-government policies do not count as fulfilled
+  - Researched in two rounds, then independently reviewed item by item; data in [`data/pledges2022.json`](data/pledges2022.json)
 - **Policy scenes:** every item has its own animated mini-diorama that floats above its island, e.g. an adult handing a child a bottle of milk for the free-milk program, or a cheering crowd around the Taipei Dome. The scene follows whichever card you are reading in the panel.
 - **Island residents:** small animated people on each island that match its theme. Tap one and they stop, wave, and show a speech bubble with one sourced fact from that policy area, with a link to the full item.
 - **Term timeline slider:** drag or play through 2022-12 → today; policy markers light up by each item's event date (opening, signing, announcement), with a ticker showing the latest item. The date reflects the recorded event, not when work on a policy began.
-- **Deep links** to any island or item, e.g. `#/transport` or `#/housing/housing-happy`
+- **Deep links** to any island, item or pledge, e.g. `#/transport`, `#/housing/housing-happy` or `#/pledges/p22-media-01`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
 
-As of that date, no complete re-election platform had been published, so the pledge category is empty. The site states this on its home screen.
+As of that date, no complete re-election platform had been published, so the re-election pledge category is empty. (The 2022 pledge tracker is separate.) The site states this on its home screen.
 
 ## How the data was compiled
 
@@ -38,6 +44,7 @@ As of that date, no complete re-election platform had been published, so the ple
   - `world.js`: islands, camera, interaction, quality tiers
   - `people.js`: all animated people share 7 instanced meshes, so the crowd size does not add draw calls
   - `vignettes.js`: the per-item scene library and the item → scene mapping
+  - `pledges.js`: the 2022 pledge tracker view, loaded separately from the 3D scene
 - Mobile performance: static meshes are merged per island, water waves run in a vertex shader, rendering pauses in list/timeline views and background tabs, idle phones are capped at 30 fps, and quality steps down automatically on slow devices (`?quality=high` or `?quality=low` overrides this)
 - Devices without WebGL fall back to the list view
 
@@ -77,5 +84,5 @@ If you find an error or outdated information, please open an issue and include a
 ## License
 
 - **Code:** MIT License
-- **Data compilation** (`data/policies.json`): CC BY 4.0. Rights to the original content belong to each source.
+- **Data compilation** (`data/policies.json`, `data/pledges2022.json`): CC BY 4.0. Rights to the original content belong to each source.
 - **Three.js:** MIT License (see `vendor/three/LICENSE`)
