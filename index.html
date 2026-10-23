@@ -10,6 +10,13 @@
   <meta property="og:locale" content="zh_TW">
   <meta property="og:title" content="臺北施政島｜蔣萬安市政與政見資訊地圖（非官方整理）">
   <meta property="og:description" content="點一座島，看一個政策領域：已完成、進行中、規劃中與連任政見，全部附來源。">
+  <meta property="og:url" content="https://chiang-wanan-policy-island.pages.dev/">
+  <meta property="og:image" content="https://chiang-wanan-policy-island.pages.dev/assets/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="六角形城市群島的低多邊形插畫（AI 生成）">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://chiang-wanan-policy-island.pages.dev/assets/og.jpg">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 40c8-10 40-10 48 0-6 10-42 10-48 0z' fill='%2320a39e'/%3E%3Ccircle cx='32' cy='24' r='10' fill='%23f08c3a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,9 +48,13 @@
       <button class="view-btn" data-view="timeline" aria-pressed="false">時間軸</button>
     </nav>
     <div class="tools">
-      <button id="btn-daynight" class="icon-btn" aria-label="切換日夜">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 13.5A8.5 8.5 0 1 1 10.5 3a7 7 0 0 0 10.5 10.5z"/></svg>
-      </button>
+      <div class="tod" role="group" aria-label="時段">
+        <button class="tod-btn" data-tod="dawn" aria-pressed="false" title="清晨"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 5v3M4.2 10.2l2 1.5M19.8 10.2l-2 1.5"/></svg><span>清晨</span></button>
+        <button class="tod-btn" data-tod="day" aria-pressed="true" title="白天"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><span>白天</span></button>
+        <button class="tod-btn" data-tod="dusk" aria-pressed="false" title="黃昏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15h18M6 15a6 6 0 0 1 12 0M7 19h10M12 4v3"/></svg><span>黃昏</span></button>
+        <button class="tod-btn" data-tod="night" aria-pressed="false" title="夜晚"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>夜晚</span></button>
+      </div>
+      <button id="btn-tod-cycle" class="icon-btn tod-cycle" aria-label="切換時段（目前：白天）"></button>
       <button id="btn-about" class="icon-btn" aria-label="關於本站">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
@@ -51,6 +62,7 @@
   </header>
 
   <section class="hero" id="hero">
+    <img class="hero-art" src="./assets/key.webp" alt="六角形城市群島的低多邊形插畫（AI 生成）" width="1600" height="896">
     <p class="hero-kicker">2022–2026 任期 ・ 2026 連任選舉</p>
     <h2>一座島，一個政策領域。</h2>
     <p class="hero-body">點選任何一座島，查看該領域的施政項目與狀態。每一項都附上公開來源，方便你自己查證。</p>
@@ -61,7 +73,20 @@
 
   <aside class="legend" id="legend" aria-label="狀態篩選">
     <p class="legend-title">依狀態篩選</p>
-    <div class="chips" id="status-chips"></div>
+    <div class="chips status-chips"></div>
+  </aside>
+
+  <aside class="index" id="index" aria-label="政策索引">
+    <p class="index-kicker">POLICY INDEX</p>
+    <h2>一格一領域，<br>看見施政全貌。</h2>
+    <p class="index-meta" id="index-meta"></p>
+    <label class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="search" type="search" placeholder="搜尋政策、關鍵字…" autocomplete="off" aria-label="搜尋政策">
+    </label>
+    <div class="chips status-chips"></div>
+    <ol class="index-list" id="index-list"></ol>
+    <div class="index-hits" id="index-hits" hidden></div>
   </aside>
 
   <aside class="panel" id="panel" aria-live="polite" aria-hidden="true">
@@ -97,11 +122,11 @@
       <li>媒體報導可能與官方最終數字有落差，引用前請點開原始來源確認。</li>
       <li>發現錯誤？歡迎到 GitHub repo 開 issue。</li>
     </ul>
-    <p class="about-tech">3D 場景以 Three.js 原創製作。互動概念參考了「政策島」類型的資訊視覺化網站，程式碼與模型皆為本站自行撰寫。</p>
+    <p class="about-tech">3D 場景以 Three.js 原創製作。互動概念參考了「政策島」類型的資訊視覺化網站，程式碼與模型皆為本站自行撰寫。首頁與各主題的插畫由 Higgsfield（gpt_image_2_5 模型）以 AI 生成，僅作氛圍示意，不代表實際建物或場景。</p>
     <p class="about-links"><a id="repo-link" href="#" target="_blank" rel="noopener">GitHub 原始碼</a></p>
   </dialog>
 
-  <div class="loading" id="loading">
+  <div class="loading" id="loading" style="--art:url('./assets/key.webp')">
     <div class="loading-isle" aria-hidden="true"></div>
     <p>島嶼浮出水面中…</p>
   </div>

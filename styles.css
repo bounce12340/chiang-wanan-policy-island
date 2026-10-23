@@ -261,3 +261,102 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
 }
 /* 政策場景演出時，隱藏各島名牌，避免蓋住特寫 */
 .staging .isle-label, .staging .center-label { opacity: 0; pointer-events: none; }
+
+/* =========================================================
+   第二階段：索引側欄、搜尋、時段切換、插畫
+   ========================================================= */
+
+/* 時段切換（桌機：分段按鈕；手機：單一按鈕循環） */
+.tod { display: flex; gap: 2px; padding: 3px; border-radius: 13px; background: var(--paper-2); border: 1px solid var(--line); }
+.tod-btn {
+  border: 0; background: none; border-radius: 10px; padding: 5px 9px 4px; display: grid; justify-items: center; gap: 1px;
+  color: var(--ink-soft); font-size: 10.5px; font-weight: 700; line-height: 1.1;
+}
+.tod-btn svg, .tod-cycle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tod-btn[data-tod="night"] svg, .tod-btn[data-tod="day"] svg circle { fill: currentColor; stroke: none; }
+.tod-btn[data-tod="day"] svg path { stroke: currentColor; }
+.tod-btn.is-active { background: var(--ink); color: var(--paper); }
+.tod-cycle { display: none; color: var(--ink); }
+.tod-cycle svg { stroke: var(--ink); }
+
+/* 首頁主視覺 */
+.hero-art {
+  display: block; width: calc(100% + 44px); margin: -22px -22px 16px; height: 150px; object-fit: cover; object-position: center 40%;
+  border-radius: 22px 22px 0 0; background: var(--paper-2);
+}
+
+/* 載入畫面：主視覺當背景 */
+.loading { background: #e8efe9 var(--art) center / cover no-repeat; }
+.loading::before { content: ""; position: absolute; inset: 0; background: rgba(251, 248, 242, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.loading > * { position: relative; }
+
+/* 面板頂部主題插畫 */
+.panel-art {
+  display: block; width: calc(100% + 44px); margin: -22px -22px 14px; aspect-ratio: 4 / 3; max-height: 210px; object-fit: cover;
+  border-radius: 22px 22px 0 0; background: var(--paper-2);
+}
+
+/* 清單檢視的主題縮圖 */
+.theme-head { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
+.theme-art { width: 112px; height: 84px; object-fit: cover; border-radius: 14px; flex: none; background: var(--paper-2); }
+.theme-head h3 { display: flex; gap: 8px; align-items: baseline; font-size: 19px; margin: 0 0 4px; }
+.theme-head h3 em { font-style: normal; font-family: var(--font-num); font-size: 15px; }
+.theme-head p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+
+/* 政策索引側欄（寬螢幕才顯示） */
+.index { display: none; }
+@media (min-width: 1100px) {
+  .index {
+    display: flex; flex-direction: column; position: fixed; z-index: 16; top: 84px; right: 12px; bottom: 12px; width: 330px;
+    padding: 20px 18px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow);
+  }
+  .legend { display: none; }
+  .footnote { left: calc((100% - 342px) / 2); }
+}
+.index-kicker { margin: 0; font-family: var(--font-num); font-size: 11.5px; font-weight: 700; letter-spacing: .2em; color: #c0603a; }
+.index h2 { margin: 6px 0 6px; font-size: 22px; font-weight: 900; line-height: 1.35; }
+.index-meta { margin: 0 0 12px; font-size: 12.5px; color: var(--ink-soft); }
+.search {
+  display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 42px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--paper-2);
+}
+.search:focus-within { border-color: var(--ink); }
+.search svg { width: 17px; height: 17px; flex: none; fill: none; stroke: var(--ink-soft); stroke-width: 2; stroke-linecap: round; }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 14.5px; color: var(--ink); }
+.index .chips { margin: 10px 0 6px; flex-wrap: wrap; max-width: none; }
+.index .chip { font-size: 12px; padding: 4px 9px; }
+.index-list, .index-hits { flex: 1; overflow-y: auto; margin: 4px -6px 0; padding: 0 6px; list-style: none; }
+.idx-row {
+  width: 100%; display: grid; grid-template-columns: 40px 1fr auto 14px; align-items: center; gap: 6px; text-align: left;
+  border: 0; border-bottom: 1px solid var(--line); background: none; padding: 13px 6px; border-radius: 10px;
+}
+.idx-row em { font-style: italic; font-family: Georgia, "Times New Roman", serif; font-size: 22px; line-height: 1; }
+.idx-row span { font-size: 15.5px; font-weight: 700; }
+.idx-row small { font-family: var(--font-num); font-size: 12px; color: var(--ink-soft); }
+.idx-row i { font-style: normal; font-size: 12px; color: var(--ink-soft); }
+.idx-row:hover, .idx-row.is-active { background: var(--paper-2); }
+.idx-row.is-active span { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.idx-row.is-empty { opacity: .4; }
+.hits-count { margin: 8px 4px; font-size: 12.5px; color: var(--ink-soft); }
+.idx-hit {
+  width: 100%; display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; align-items: center; text-align: left;
+  border: 0; border-bottom: 1px solid var(--line); background: none; padding: 10px 6px; border-radius: 10px;
+}
+.idx-hit:hover { background: var(--paper-2); }
+.idx-hit b { font-size: 14px; line-height: 1.45; }
+.idx-hit small { grid-column: 2; font-size: 12px; color: var(--ink-soft); }
+
+/* 夜晚時的側欄與時段按鈕維持可讀 */
+body.night .index-kicker { color: #f0a27e; }
+
+@media (max-width: 760px) {
+  .tod { display: none; }
+  .tod-cycle { display: grid; }
+  .hero-art { height: 96px; margin-bottom: 12px; }
+  .panel-art { max-height: 150px; }
+  .theme-art { width: 84px; height: 63px; }
+}
+@media (max-width: 760px) {
+  .hero-art { width: calc(100% + 36px); margin: -18px -18px 12px; }
+  .panel-art { width: calc(100% + 32px); margin: -12px -16px 12px; border-radius: 0; }
+}

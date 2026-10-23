@@ -48,6 +48,7 @@ async function boot() {
   const themes = data.themes;
   const byId = new Map(themes.map((t) => [t.id, t]));
   const allItems = themes.flatMap((t) => t.items.map((i) => ({ ...i, theme: t })));
+  let world = null; // 3D 場景稍後才建立；在那之前所有 world?.xxx 呼叫都安全略過
 
   $('#about-updated').textContent = fmtDate(data.meta.updated);
   $('#foot-updated').textContent = fmtDate(data.meta.updated);
@@ -67,16 +68,19 @@ async function boot() {
 
   // ---------- status chips ----------
   let statusFilter = null;
-  const chips = $('#status-chips');
-  chips.innerHTML = `<button class="chip" data-s="" aria-pressed="true">全部 <span class="n">${allItems.length}</span></button>` +
+  const chipHTML = `<button class="chip" data-s="" aria-pressed="true">全部 <span class="n">${allItems.length}</span></button>` +
     STATUS_ORDER.map((s) => `<button class="chip" data-s="${s}" aria-pressed="false"><i style="background:${STATUS[s].color}"></i>${STATUS[s].label} <span class="n">${counts[s]}</span></button>`).join('');
-  chips.addEventListener('click', (e) => {
-    const b = e.target.closest('.chip');
-    if (!b) return;
-    statusFilter = b.dataset.s || null;
-    chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
-    world?.setStatusFilter(statusFilter);
-    applyFilterToDom();
+  document.querySelectorAll('.status-chips').forEach((box) => {
+    box.innerHTML = chipHTML;
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('.chip');
+      if (!b) return;
+      statusFilter = b.dataset.s || null;
+      document.querySelectorAll('.status-chips .chip').forEach((c) => c.setAttribute('aria-pressed', String((c.dataset.s || null) === statusFilter)));
+      world?.setStatusFilter(statusFilter);
+      applyFilterToDom();
+      renderIndex();
+    });
   });
   function applyFilterToDom() {
     document.querySelectorAll('.item').forEach((el) => {
@@ -100,6 +104,7 @@ async function boot() {
     const prev = themes[(idx - 1 + themes.length) % themes.length];
     const next = themes[(idx + 1) % themes.length];
     panelInner.innerHTML = `
+      <img class="panel-art" src="./assets/themes/${theme.id}.webp" alt="${esc(theme.name)}主題插畫（AI 生成）" width="800" height="600">
       <div class="panel-head">
         <span class="panel-tag"><i style="background:${theme.color}"></i>政策島 ${String(idx + 1).padStart(2, '0')} / ${themes.length}</span>
         <h2>${esc(theme.name)}</h2>
@@ -112,7 +117,9 @@ async function boot() {
         <button data-go="${prev.id}">← ${esc(prev.name)}</button>
         <button data-go="${next.id}">${esc(next.name)} →</button>
       </div>`;
+    panelInner.querySelector('.panel-art')?.addEventListener('error', (e) => e.target.remove());
     applyFilterToDom();
+    markIndexActive();
     panel.classList.add('is-open');
     panel.setAttribute('aria-hidden', 'false');
     panelInner.scrollTop = 0;
@@ -135,6 +142,7 @@ async function boot() {
   function closePanel() {
     if (!currentTheme) return;
     currentTheme = null;
+    markIndexActive();
     panel.classList.remove('is-open');
     panel.setAttribute('aria-hidden', 'true');
     world?.resetView();
@@ -198,14 +206,21 @@ async function boot() {
 
   // ---------- hero ----------
   const hero = $('#hero');
-  function hideHero() { hero.classList.add('is-hidden'); document.body.classList.add('started'); }
+  function hideHero() {
+    if (hero.classList.contains('is-hidden')) return;
+    hero.classList.add('is-hidden');
+    document.body.classList.add('started');
+    // 介紹卡淡出後，地圖重新置中到空出來的位置
+    setTimeout(() => world?.refreshLayout(), 520);
+  }
   $('#btn-start').addEventListener('click', () => openTheme(themes[0].id));
 
   // ---------- list & timeline views ----------
   function renderList() {
     $('#list-inner').innerHTML = `<h2>全部施政項目</h2><p class="lead">依政策領域排列，共 ${allItems.length} 項。點來源連結可查看原始資料。</p>` +
-      themes.map((t) => `<section class="theme-block" id="list-${t.id}">
-        <h3><i style="background:${t.color}"></i>${esc(t.name)}</h3><p>${esc(t.summary)}</p>
+      themes.map((t, n) => `<section class="theme-block" id="list-${t.id}">
+        <div class="theme-head"><img class="theme-art" src="./assets/themes/${t.id}.webp" alt="" loading="lazy" width="800" height="600">
+        <div><h3><em style="color:${t.color}">${String(n + 1).padStart(2, '0')}</em>${esc(t.name)}</h3><p>${esc(t.summary)}</p></div></div>
         <div class="grid">${[...t.items].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)).map((i) => itemHTML(i, t)).join('')}</div>
       </section>`).join('');
   }
@@ -229,6 +244,50 @@ async function boot() {
   }
   renderList();
   renderTimeline();
+  document.querySelectorAll('.theme-art').forEach((img) => img.addEventListener('error', () => img.remove()));
+
+  // ---------- 政策索引側欄＋搜尋 ----------
+  const indexList = $('#index-list');
+  const indexHits = $('#index-hits');
+  const searchInput = $('#search');
+  $('#index-meta').textContent = `${themes.length} 個政策領域／${allItems.length} 項施政／${srcCount} 個來源`;
+  function renderIndex() {
+    indexList.innerHTML = themes.map((t, n) => {
+      const shown = statusFilter ? t.items.filter((i) => i.status === statusFilter).length : t.items.length;
+      return `<li><button class="idx-row${shown ? '' : ' is-empty'}" data-theme="${t.id}">
+        <em style="color:${t.color}">${String(n + 1).padStart(2, '0')}</em><span>${esc(t.name)}</span><small>${shown}${statusFilter ? `/${t.items.length}` : ''}</small><i aria-hidden="true">↗</i>
+      </button></li>`;
+    }).join('');
+    markIndexActive();
+  }
+  function markIndexActive() {
+    indexList.querySelectorAll('.idx-row').forEach((b) => b.classList.toggle('is-active', b.dataset.theme === currentTheme));
+  }
+  const norm = (x) => String(x || '').toLowerCase();
+  function runSearch() {
+    const q = norm(searchInput.value.trim());
+    if (!q) { indexHits.hidden = true; indexList.hidden = false; return; }
+    const hits = allItems.filter((i) => [i.title, i.theme.name, ...(i.facts || [])].some((f) => norm(f).includes(q)))
+      .filter((i) => !statusFilter || i.status === statusFilter).slice(0, 40);
+    indexList.hidden = true;
+    indexHits.hidden = false;
+    indexHits.innerHTML = hits.length
+      ? `<p class="hits-count">找到 ${hits.length} 項</p>` + hits.map((i) => `<button class="idx-hit" data-theme="${i.theme.id}" data-item="${esc(i.id)}">
+          <span class="badge" style="background:${STATUS[i.status].color}">${STATUS[i.status].label}</span>
+          <b>${esc(i.title)}</b><small>${esc(i.theme.name)}</small></button>`).join('')
+      : '<p class="hits-count">找不到符合的項目，試試其他關鍵字。</p>';
+  }
+  searchInput.addEventListener('input', runSearch);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== searchInput && !e.target.closest?.('input, textarea')) { e.preventDefault(); searchInput.focus(); }
+  });
+  $('#index').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-theme]');
+    if (!b) return;
+    if (view !== 'island') setView('island');
+    openTheme(b.dataset.theme, b.dataset.item);
+  });
+  renderIndex();
 
   let view = 'island';
   function setView(v) {
@@ -266,13 +325,31 @@ async function boot() {
     tip.hidden = false;
   }
 
-  // ---------- day / night ----------
-  let night = false;
-  $('#btn-daynight').addEventListener('click', () => {
-    night = !night;
-    document.body.classList.toggle('night', night);
-    world?.setNight(night);
+  // ---------- 時段：清晨／白天／黃昏／夜晚 ----------
+  const TOD_ORDER = ['dawn', 'day', 'dusk', 'night'];
+  const TOD_LABEL = { dawn: '清晨', day: '白天', dusk: '黃昏', night: '夜晚' };
+  const cycleBtn = $('#btn-tod-cycle');
+  let tod = 'day';
+  function setTod(key) {
+    tod = key;
+    document.body.classList.toggle('night', key === 'night');
+    document.body.dataset.tod = key;
+    document.querySelectorAll('.tod-btn').forEach((b) => {
+      const on = b.dataset.tod === key;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    const src = document.querySelector(`.tod-btn[data-tod="${key}"] svg`);
+    if (src) cycleBtn.innerHTML = src.outerHTML;
+    cycleBtn.setAttribute('aria-label', `切換時段（目前：${TOD_LABEL[key]}）`);
+    world?.setTimeOfDay(key);
+  }
+  document.querySelector('.tod').addEventListener('click', (e) => {
+    const b = e.target.closest('.tod-btn');
+    if (b) setTod(b.dataset.tod);
   });
+  cycleBtn.addEventListener('click', () => setTod(TOD_ORDER[(TOD_ORDER.indexOf(tod) + 1) % TOD_ORDER.length]));
+  setTod('day');
 
   // ---------- about ----------
   const about = $('#about');
@@ -280,7 +357,6 @@ async function boot() {
   about.addEventListener('click', (e) => { if (e.target === about) about.close(); });
 
   // ---------- 3D world ----------
-  let world = null;
   try {
     const probe = document.createElement('canvas');
     if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) throw new Error('no webgl');

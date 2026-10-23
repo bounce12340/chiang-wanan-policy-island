@@ -26,8 +26,8 @@ const TIMES = {
     sun: '#fff1dc', sunI: 2.3, sunPos: [-26, 44, 18], glow: 0.0, cloud: 0.95,
   },
   dusk: {
-    sky: '#f0c4a6', fog: '#e9bfa3', water: '#4f7f9a', shallow: '#86b9b4', hemiSky: '#ffd0b0', hemiGround: '#8d6f5c', hemi: 0.95,
-    sun: '#ff9f6b', sunI: 1.6, sunPos: [38, 14, -6], glow: 0.7, cloud: 0.8,
+    sky: '#f3c9a8', fog: '#eec6a8', water: '#5d8ea4', shallow: '#97c6bd', hemiSky: '#ffdcc0', hemiGround: '#a88a74', hemi: 1.15,
+    sun: '#ffab78', sunI: 2.0, sunPos: [38, 22, 6], glow: 0.6, cloud: 0.85,
   },
   night: {
     sky: '#0f1730', fog: '#121c36', water: '#173456', shallow: '#22506a', hemiSky: '#5b6fa8', hemiGround: '#1c2236', hemi: 0.55,
@@ -1146,7 +1146,27 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   function setInset() {
     const small = window.matchMedia('(max-width: 760px)').matches;
     const panel = document.getElementById('panel');
-    if (!focused || !panel) { inset.tx = 0; inset.ty = 0; return; }
+    if (!focused || !panel) {
+      // 沒選島時：把地圖放在「沒被介面蓋住」的區域中央
+      // 桌機：左邊可能有介紹卡、右邊有索引欄；手機：上有標題列、下有介紹卡或狀態列
+      const W = container.clientWidth, H = container.clientHeight;
+      const shown = (el) => el && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden'
+        && !el.classList.contains('is-hidden') && !el.classList.contains('is-hidden-ui') && parseFloat(getComputedStyle(el).opacity) > 0.05;
+      const rect = (id) => document.getElementById(id)?.getBoundingClientRect();
+      const hero = document.getElementById('hero'), idx = document.getElementById('index'), legend = document.getElementById('legend');
+      const bar = document.querySelector('.topbar');
+      let L = 0, R = W, T = bar ? bar.getBoundingClientRect().bottom : 0, B = H;
+      if (small) {
+        if (shown(hero)) B = rect('hero').top;
+        else if (shown(legend)) B = rect('legend').top;
+      } else {
+        if (shown(hero)) L = rect('hero').right;
+        if (shown(idx)) R = rect('index').left;
+      }
+      inset.tx = W / 2 - (L + R) / 2;
+      inset.ty = H / 2 - (T + B) / 2;
+      return;
+    }
     // 手機：面板在下、標題列在上，焦點放在兩者之間；桌機：面板在右
     const bar = document.querySelector('.topbar');
     if (small) { inset.tx = 0; inset.ty = (panel.offsetHeight - (bar ? bar.offsetHeight + 8 : 0)) / 2; } else { inset.tx = (panel.offsetWidth + 12) / 2; inset.ty = 0; }
@@ -1409,9 +1429,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   // 開場：從遠處推近
   flyTo(HOME.pos, HOME.target, 2.4);
   applyPalette(cur);
+  setInset();
+  inset.x = inset.tx; // 開場直接到位，不要滑動
 
   return {
-    focusTheme, resetView, setStatusFilter, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
+    focusTheme, resetView, setStatusFilter, refreshLayout: setInset, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
   };
 }
