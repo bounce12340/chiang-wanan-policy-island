@@ -107,6 +107,7 @@ a { color: inherit; }
   transition: transform .2s, opacity .3s;
 }
 .isle-label i { width: 10px; height: 10px; border-radius: 3px; }
+.isle-label em { font-style: normal; font-family: var(--font-num); font-weight: 700; font-size: 11.5px; letter-spacing: .02em; }
 .isle-label small { font-family: var(--font-num); font-weight: 500; color: #3d4a66; }
 .isle-label:hover, .isle-label.is-hover { transform: translateY(-3px) scale(1.05); }
 .isle-label.is-dim { opacity: .35; }
@@ -251,9 +252,12 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
   .overlay-view { padding-top: 124px; }
   .tl-row { grid-template-columns: 1fr; gap: 0; }
   .tl-when { padding-top: 4px; }
-  .isle-label { font-size: 12px; padding: 4px 8px 4px 6px; }
+  .isle-label { font-size: 11px; padding: 3px 7px 3px 6px; gap: 4px; }
+  .isle-label small { display: none; }
   .footnote { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+/* 政策場景演出時，隱藏各島名牌，避免蓋住特寫 */
+.staging .isle-label, .staging .center-label { opacity: 0; pointer-events: none; }

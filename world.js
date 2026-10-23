@@ -13,17 +13,34 @@ export const STATUS_COLORS = {
   pledge: 0xd0457a,
 };
 
-const TOP = 1.45; // 島嶼草地頂面高度
-const DAY = {
-  sky: new THREE.Color('#cfe6f2'), fog: new THREE.Color('#d9ecf3'), water: new THREE.Color('#3f97bf'),
-  hemiSky: new THREE.Color('#ffffff'), hemiGround: new THREE.Color('#b9a98a'), hemi: 1.15,
-  sun: new THREE.Color('#fff4e0'), sunI: 2.3,
+const TOP = 1.45; // 地塊草地頂面高度
+
+// 四個時段的光線與色調；切換時逐格內插
+const TIMES = {
+  dawn: {
+    sky: '#f2d9c8', fog: '#f0dccd', water: '#5f9fb0', shallow: '#9fd2c8', hemiSky: '#ffe6d2', hemiGround: '#b8a088', hemi: 1.0,
+    sun: '#ffc79a', sunI: 1.7, sunPos: [-40, 18, 10], glow: 0.35, cloud: 0.9,
+  },
+  day: {
+    sky: '#f3ece0', fog: '#efe6d6', water: '#4f9fae', shallow: '#8fd3c7', hemiSky: '#ffffff', hemiGround: '#bfae8e', hemi: 1.15,
+    sun: '#fff1dc', sunI: 2.3, sunPos: [-26, 44, 18], glow: 0.0, cloud: 0.95,
+  },
+  dusk: {
+    sky: '#f0c4a6', fog: '#e9bfa3', water: '#4f7f9a', shallow: '#86b9b4', hemiSky: '#ffd0b0', hemiGround: '#8d6f5c', hemi: 0.95,
+    sun: '#ff9f6b', sunI: 1.6, sunPos: [38, 14, -6], glow: 0.7, cloud: 0.8,
+  },
+  night: {
+    sky: '#0f1730', fog: '#121c36', water: '#173456', shallow: '#22506a', hemiSky: '#5b6fa8', hemiGround: '#1c2236', hemi: 0.55,
+    sun: '#9fb4ff', sunI: 0.55, sunPos: [20, 40, -20], glow: 1.0, cloud: 0.25,
+  },
 };
-const NIGHT = {
-  sky: new THREE.Color('#0d1528'), fog: new THREE.Color('#111b33'), water: new THREE.Color('#14325a'),
-  hemiSky: new THREE.Color('#5b6fa8'), hemiGround: new THREE.Color('#1c2236'), hemi: 0.55,
-  sun: new THREE.Color('#9fb4ff'), sunI: 0.55,
-};
+const toPalette = (t) => ({
+  sky: new THREE.Color(t.sky), fog: new THREE.Color(t.fog), water: new THREE.Color(t.water), shallow: new THREE.Color(t.shallow),
+  hemiSky: new THREE.Color(t.hemiSky), hemiGround: new THREE.Color(t.hemiGround), hemi: t.hemi,
+  sun: new THREE.Color(t.sun), sunI: t.sunI, sunPos: new THREE.Vector3(...t.sunPos), glow: t.glow, cloud: t.cloud,
+});
+const PALETTES = Object.fromEntries(Object.entries(TIMES).map(([k, v]) => [k, toPalette(v)]));
+const DAY = PALETTES.day;
 
 // 可重現的亂數，讓每次載入的島嶼形狀一致
 function rng(seed) {
@@ -59,12 +76,13 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
   const scene = new THREE.Scene();
   scene.background = DAY.sky.clone();
-  scene.fog = new THREE.Fog(DAY.fog.clone(), 55, 140);
+  scene.fog = new THREE.Fog(DAY.fog.clone(), 110, 330);
 
-  const camera = new THREE.PerspectiveCamera(isSmall ? 50 : 38, container.clientWidth / container.clientHeight, 0.1, 400);
+  // 鳥瞰：鏡頭高、視角窄，接近地圖的俯視感
+  const camera = new THREE.PerspectiveCamera(isSmall ? 42 : 30, container.clientWidth / container.clientHeight, 0.5, 600);
   const HOME = {
-    pos: isSmall ? new THREE.Vector3(0, 66, 74) : new THREE.Vector3(0, 36, 50),
-    target: new THREE.Vector3(0, 0, isSmall ? 3 : 1),
+    pos: isSmall ? new THREE.Vector3(0, 74, 70) : new THREE.Vector3(0, 50, 72),
+    target: new THREE.Vector3(0, 0, isSmall ? 1 : -6),
   };
   camera.position.copy(HOME.pos).multiplyScalar(1.6);
 
@@ -72,20 +90,20 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
   controls.minDistance = 10;
-  controls.maxDistance = 110;
-  controls.maxPolarAngle = Math.PI * 0.44;
+  controls.maxDistance = 150;
+  controls.maxPolarAngle = Math.PI * 0.42;
   controls.target.copy(HOME.target);
-  controls.autoRotate = !reduceMotion;
+  controls.autoRotate = false; // 鳥瞰地圖固定朝北，不自動旋轉
   controls.autoRotateSpeed = 0.35;
 
   // ---------- lights ----------
   const hemi = new THREE.HemisphereLight(DAY.hemiSky, DAY.hemiGround, DAY.hemi);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(DAY.sun, DAY.sunI);
-  sun.position.set(-26, 40, 18);
+  sun.position.copy(DAY.sunPos);
   sun.castShadow = true;
   sun.shadow.mapSize.set(isSmall ? 1024 : 2048, isSmall ? 1024 : 2048);
-  Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 120 });
+  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 140 });
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.03;
   scene.add(sun);
@@ -93,7 +111,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   // ---------- shared materials ----------
   const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.85, ...extra });
   const M = {
-    grass: mat('#8cc084'), sand: mat('#ecdcae'), rock: mat('#a7825c'), rockDark: mat('#8a6a4a'),
+    grass: mat('#a9c98a'), sand: mat('#efdcb4'), rock: mat('#c9ab82'), rockDark: mat('#9c8063'),
+    pave: mat('#efe3c8'), wall: mat('#dccaa5'),
     white: mat('#f4f1ea'), concrete: mat('#c9c4b8'), dark: mat('#2b2f45', { roughness: 0.5, metalness: 0.2 }),
     glass: mat('#6f8fb3', { roughness: 0.3, metalness: 0.3 }), trunk: mat('#7a5638'), leaf: mat('#5da35a'),
     leaf2: mat('#7dbb63'), road: mat('#5c6170'), stripe: mat('#f7f3e8'), rail: mat('#d8d2c3'),
@@ -179,17 +198,27 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
   // ---------- water ----------
   // 波動在 vertex shader 裡算，CPU 每幀只更新一個時間 uniform
-  const waterSeg = isSmall ? 64 : 90;
-  const waterGeo = new THREE.PlaneGeometry(260, 260, waterSeg, waterSeg);
+  // 群島周圍是淺水（青綠），越往外越深：在 fragment shader 依距離混色
+  const waterSeg = isSmall ? 64 : 96;
+  const waterGeo = new THREE.PlaneGeometry(420, 420, waterSeg, waterSeg);
   waterGeo.rotateX(-Math.PI / 2);
-  const waterMat = new THREE.MeshStandardMaterial({ color: DAY.water.clone(), flatShading: true, roughness: 0.32, metalness: 0.08 });
+  const waterMat = new THREE.MeshStandardMaterial({ color: DAY.water.clone(), flatShading: true, roughness: 0.3, metalness: 0.06 });
   const waterTime = { value: 0 };
+  const waterShallow = { value: DAY.shallow.clone() };
   waterMat.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = waterTime;
-    shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader.replace(
+    shader.uniforms.uShallow = waterShallow;
+    shader.vertexShader = 'uniform float uTime;\nvarying vec2 vWPos;\n' + shader.vertexShader.replace(
       '#include <begin_vertex>',
       `#include <begin_vertex>
-      transformed.y += sin(position.x * 0.16 + uTime * 0.9) * 0.16 + cos(position.z * 0.13 + uTime * 0.7) * 0.14;`,
+      transformed.y += sin(position.x * 0.16 + uTime * 0.9) * 0.14 + cos(position.z * 0.13 + uTime * 0.7) * 0.12;
+      vWPos = (modelMatrix * vec4(transformed, 1.0)).xz;`,
+    );
+    shader.fragmentShader = 'uniform vec3 uShallow;\nvarying vec2 vWPos;\n' + shader.fragmentShader.replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>
+      float wd = length(vWPos);
+      diffuseColor.rgb = mix(uShallow, diffuseColor.rgb, smoothstep(17.0, 34.0, wd));`,
     );
   };
   const water = new THREE.Mesh(waterGeo, waterMat);
@@ -238,6 +267,49 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     }
     return { group: g, pickMeshes: [rock, sandRing, top] };
   }
+
+  // ---------- 六角地塊：石砌護岸、外圈步道、草地 ----------
+  const HEX_R = 4.0; // 外接圓半徑（尖角朝 ±z）
+  const HEX_GAP = 4.3; // 排列用的格距，留一點水道
+  function hexBase(seed, radius = HEX_R) {
+    const g = new THREE.Group();
+    const rand = rng(seed);
+    const layer = (rt, rb, h, y, m) => {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 6), m);
+      mesh.position.y = y;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      g.add(mesh);
+      return mesh;
+    };
+    layer(radius * 1.04, radius * 1.18, 0.9, -0.55, M.rockDark); // 水下基座
+    layer(radius, radius * 1.03, 1.5, 0.45, M.wall); // 護岸
+    layer(radius * 0.995, radius, 0.12, 1.26, M.pave); // 外圈步道
+    layer(radius * 0.9, radius * 0.9, 0.14, 1.38, M.grass); // 草地，頂面 = TOP
+    // 六個角的路燈
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 5), M.white);
+      post.position.set(Math.sin(a) * radius * 0.95, 1.57, Math.cos(a) * radius * 0.95);
+      g.add(post);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4), windowMat);
+      lamp.position.set(post.position.x, 1.85, post.position.z);
+      g.add(lamp);
+    }
+    for (let i = 0; i < 2; i++) {
+      const a = rand() * Math.PI * 2;
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3 + rand() * 0.35, 0), M.rockDark);
+      r.position.set(Math.cos(a) * radius * 1.2, 0.05, Math.sin(a) * radius * 1.2);
+      r.rotation.set(rand() * 3, rand() * 3, rand() * 3);
+      r.castShadow = true;
+      g.add(r);
+    }
+    return g;
+  }
+  // 六角格座標（axial）→ 世界座標
+  const axial = (q, r) => new THREE.Vector3(HEX_GAP * Math.sqrt(3) * (q + r / 2), 0, HEX_GAP * 1.5 * r);
+  // 9 個主題地塊環繞中央臺北：內圈 6 格、外圈 3 格，拼成一座城
+  const HEX_SLOTS = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [1, 1], [-2, 1], [2, -1]];
 
   // ---------- theme models（每個領域一組原創小模型）----------
   const T = (hex) => mat(hex);
@@ -453,7 +525,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   }
 
   // ---------- islands ----------
-  const R = 19.5;
+
   const islands = new Map();
   const tmpV = new THREE.Vector3();
   const beaconList = [];
@@ -461,15 +533,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 
   themes.forEach((theme, i) => {
-    const angle = (i / themes.length) * Math.PI * 2 + Math.PI / 2;
-    const pos = new THREE.Vector3(Math.cos(angle) * R, 0, Math.sin(angle) * R);
+    const angle = i * 1.7; // 只用來錯開浮動相位
+    const [q, r] = HEX_SLOTS[i % HEX_SLOTS.length];
+    const pos = axial(q, r);
     const root = new THREE.Group();
-    root.position.copy(pos);
-    root.rotation.y = -angle + Math.PI / 2; // 模型正面朝向中心外側的鏡頭
+    root.position.copy(pos); // 模型一律正面朝 +z（鳥瞰鏡頭的方向）
     scene.add(root);
 
-    const { group: base } = islandBase(3.3, 1000 + i * 37);
-    root.add(base);
+    root.add(hexBase(1000 + i * 37));
 
     const models = new THREE.Group();
     models.position.y = TOP;
@@ -488,11 +559,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
     // 水面光環：hover / 選取時亮起（平時隱藏，不佔繪製）
     const halo = new THREE.Mesh(
-      new THREE.RingGeometry(3.9, 4.6, 40),
+      new THREE.RingGeometry(HEX_R * 1.06, HEX_R * 1.24, 6, 1, Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: theme.color, transparent: true, opacity: 0, depthWrite: false }),
     );
     halo.rotation.x = -Math.PI / 2;
-    halo.position.y = 0.32;
+    halo.position.y = 0.35;
     halo.visible = false;
     root.add(halo);
 
@@ -502,7 +573,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     theme.items.forEach((item, k) => {
       const a = (k / n) * Math.PI * 2 + 0.4;
       const b = new THREE.Object3D();
-      b.position.set(Math.cos(a) * 2.75, TOP, Math.sin(a) * 2.75);
+      b.position.set(Math.cos(a) * 2.85, TOP, Math.sin(a) * 2.85);
       const pole = new THREE.Object3D();
       pole.position.y = 0.65;
       const orb = new THREE.Object3D();
@@ -523,10 +594,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const el = document.createElement('button');
     el.className = 'isle-label';
     el.type = 'button';
-    el.innerHTML = `<i style="background:${theme.color}"></i>${theme.name}<small>${n}</small>`;
+    // 編號標籤：01 交通
+    el.innerHTML = `<em style="color:${theme.color}">${String(i + 1).padStart(2, '0')}</em>${theme.name}<small>${n}</small>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); onSelectTheme(theme.id); });
     const label = new CSS2DObject(el);
-    label.position.set(0, 6.4, 0);
+    label.position.set(0, 4.6, 1.2);
     root.add(label);
 
     islands.set(theme.id, { theme, root, pos, halo, beacons, label: el, angle, hover: 0, active: 0 });
@@ -697,6 +769,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     stage.ownMaterials.forEach((m) => m.dispose());
     stage.beam.material.dispose();
     islands.get(stage.themeId)?.label.classList.remove('is-hidden-label');
+    labelRenderer.domElement.classList.remove('staging');
     stage = null;
   }
 
@@ -736,6 +809,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     mergeStatic(content);
     root.scale.setScalar(0.01);
     isle.label.classList.add('is-hidden-label');
+    labelRenderer.domElement.classList.add('staging');
   }
 
   function updateStage(dt) {
@@ -761,7 +835,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
   // 中央臺北島
   {
-    const { group } = islandBase(5.6, 4242);
+    const group = hexBase(4242);
     scene.add(group);
     const c = new THREE.Group();
     c.position.y = TOP;
@@ -779,14 +853,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     tip.position.y = y + 1.45;
     c.add(tip);
     // 廣場與步道
-    const plaza = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 0.05, 32), M.sand);
+    const plaza = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.7, 0.05, 6), M.pave);
     plaza.position.y = 0.02;
     plaza.receiveShadow = true;
     c.add(plaza);
     const rand = rng(9);
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2 + 0.2;
-      const r = 4.2 + rand() * 0.6;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.4;
+      const r = 2.85 + rand() * 0.2;
       treeSpots.push(new THREE.Vector3(Math.cos(a) * r, TOP, Math.sin(a) * r));
     }
     mergeStatic(group);
@@ -798,10 +872,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     group.add(lbl);
   }
 
-  buildTrees(treeSpots);
-
-  // ---------- 環狀軌道與列車：把各島串起來 ----------
-  const ringR = 12.6;
+  // ---------- 環狀高架輕軌：繞著群島外圍的水面 ----------
+  const ringR = 20;
   const ringPts = [];
   for (let i = 0; i < 64; i++) {
     const a = (i / 64) * Math.PI * 2;
@@ -813,25 +885,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   const track = new THREE.Mesh(new THREE.TubeGeometry(ringCurve, 256, 0.14, 6, true), M.rail);
   track.castShadow = true;
   trackGroup.add(track);
-  for (let i = 0; i < 24; i++) {
-    const p = ringCurve.getPointAt(i / 24);
+  for (let i = 0; i < 36; i++) {
+    const p = ringCurve.getPointAt(i / 36);
     const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, p.y, 6), M.concrete);
     pylon.position.set(p.x, p.y / 2, p.z);
     pylon.castShadow = true;
     trackGroup.add(pylon);
   }
   mergeStatic(trackGroup);
-  // 從環線伸向各島的步道橋
-  islands.forEach(({ pos, theme }) => {
-    const dir = pos.clone().normalize();
-    const a = dir.clone().multiplyScalar(ringR + 0.3).setY(2.5);
-    const b = dir.clone().multiplyScalar(R - 3.1).setY(TOP + 0.05);
-    const mid = a.clone().lerp(b, 0.5).setY(2.6);
-    const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-    const bridge = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.12, 5, false), mat(theme.color));
-    bridge.castShadow = true;
-    scene.add(bridge);
-  });
   const train = [];
   const trainMat = mat('#f4f1ea');
   for (let i = 0; i < 5; i++) {
@@ -854,7 +915,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     sail.position.y = 0.8;
     b.add(hull, sail);
     b.traverse((o) => { o.castShadow = true; });
-    b.userData = { r: 28 + i * 4, speed: 0.04 + i * 0.012, phase: i * 2.1 };
+    b.userData = { r: 26 + i * 5, speed: 0.04 + i * 0.012, phase: i * 2.1 };
     scene.add(b);
     boats.push(b);
   }
@@ -870,11 +931,152 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       c.add(s);
     }
     mergeStatic(c).forEach((m) => { m.castShadow = false; m.receiveShadow = false; });
-    c.position.set(-60 + crand() * 120, 15 + crand() * 7, -50 + crand() * 100);
+    c.position.set(-70 + crand() * 140, 24 + crand() * 8, -70 + crand() * 90);
+    c.scale.setScalar(1.4 + crand());
     c.userData.speed = 0.6 + crand() * 0.6;
     scene.add(c);
     clouds.push(c);
   }
+
+  // ---------- 背景地形：北側高山森林（盆地感），其他方向是低丘與海岸 ----------
+  {
+    const hash = (x, z) => { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); };
+    const vnoise = (x, z) => {
+      const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi;
+      const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+      const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    const fbm = (x, z) => { let s = 0, amp = 1, f = 1; for (let o = 0; o < 4; o++) { s += amp * vnoise(x * f, z * f); amp *= 0.5; f *= 2.03; } return s / 1.875; };
+    const height = (x, z) => {
+      const d = Math.hypot(x, z * 1.1);
+      const land = THREE.MathUtils.smoothstep(d, 36, 66); // 群島周圍保持海面
+      const north = THREE.MathUtils.clamp((-z - 6) / 95, 0, 1); // 北側越高
+      const n = fbm(x * 0.028 + 10, z * 0.028 + 3);
+      return land * (3 + n * 12 + north * north * 38 * (0.55 + n)) - 3.2;
+    };
+    const seg = isSmall ? 72 : 120;
+    const geo = new THREE.PlaneGeometry(400, 400, seg, seg);
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    const cSand = new THREE.Color('#e9d6ac'), cGrass = new THREE.Color('#b6cf8f'), cForest = new THREE.Color('#7fa86a'), cHigh = new THREE.Color('#5f8a57'), cRock = new THREE.Color('#b9a888');
+    const tmpC = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const h = height(pos.getX(i), pos.getZ(i));
+      pos.setY(i, h);
+      if (h < 0.8) tmpC.copy(cSand);
+      else if (h < 5) tmpC.copy(cGrass).lerp(cForest, (h - 0.8) / 4.2);
+      else if (h < 22) tmpC.copy(cForest).lerp(cHigh, (h - 5) / 17);
+      else tmpC.copy(cHigh).lerp(cRock, Math.min((h - 22) / 14, 1));
+      colors.set([tmpC.r, tmpC.g, tmpC.b], i * 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    const terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }));
+    scene.add(terrain);
+
+    // 山坡森林：一次畫完的 InstancedMesh
+    const rand = rng(2026);
+    const spots = [];
+    for (let k = 0; k < 14000 && spots.length < (isSmall ? 1100 : 2400); k++) {
+      const x = (rand() - 0.5) * 300, z = -170 + rand() * 230;
+      const h = height(x, z);
+      if (h > 1.4 && h < 34 && rand() < 0.9) spots.push([x, h, z, 0.45 + rand() * 0.5]);
+    }
+    const crowns = new THREE.InstancedMesh(new THREE.ConeGeometry(0.9, 2.4, 6), mat('#5f9157'), spots.length);
+    const crowns2 = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.0, 0), mat('#7aa863'), spots.length);
+    const d = new THREE.Object3D();
+    spots.forEach(([x, h, z, s], i) => {
+      d.position.set(x, h + 1.0 * s, z); d.scale.setScalar(s); d.rotation.y = rand() * 3; d.updateMatrix();
+      crowns.setMatrixAt(i, d.matrix);
+      d.position.set(x + 0.8 * s, h + 0.6 * s, z + 0.5 * s); d.scale.setScalar(s * 0.7); d.updateMatrix();
+      crowns2.setMatrixAt(i, d.matrix);
+    });
+    scene.add(crowns, crowns2);
+
+    // 海岸小聚落
+    const houses = [];
+    for (let k = 0; k < 2000 && houses.length < 26; k++) {
+      const x = (rand() - 0.5) * 220, z = (rand() - 0.5) * 220;
+      const h = height(x, z);
+      if (h > 0.9 && h < 4.5) houses.push([x, h, z, rand() * Math.PI]);
+    }
+    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 1.1, 1.1), mat('#f4ece0'), houses.length);
+    const roofs = new THREE.InstancedMesh(new THREE.ConeGeometry(1.1, 0.8, 4), mat('#e08a5c'), houses.length);
+    houses.forEach(([x, h, z, r], i) => {
+      d.position.set(x, h + 0.55, z); d.rotation.set(0, r, 0); d.scale.setScalar(1); d.updateMatrix(); walls.setMatrixAt(i, d.matrix);
+      d.position.set(x, h + 1.5, z); d.rotation.set(0, r + Math.PI / 4, 0); d.updateMatrix(); roofs.setMatrixAt(i, d.matrix);
+    });
+    scene.add(walls, roofs);
+  }
+
+  // ---------- 衛星小島：燈塔、風車、沙灘、礁岩、梯田 ----------
+  {
+    const islet = (x, z, r, seed) => {
+      const g = islandBase(r, seed).group;
+      g.scale.set(1, 0.38, 1);
+      const root = new THREE.Group();
+      root.position.set(x, 0, z);
+      root.add(g);
+      const top = new THREE.Group();
+      top.position.y = TOP * 0.38;
+      root.add(top);
+      scene.add(root);
+      return { root, top };
+    };
+    const lh = islet(25, 9, 2.4, 51);
+    for (let i = 0; i < 5; i++) lh.top.add(cyl(0.42 - i * 0.04, 0.46 - i * 0.04, 0.55, 10, i % 2 ? mat('#d9604f') : M.white, 0.4, i * 0.55, -0.2));
+    lh.top.add(cyl(0.3, 0.3, 0.35, 8, M.glass, 0.4, 2.75, -0.2));
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), glow('#ffd88a', 0.4));
+    lamp.position.set(0.4, 2.95, -0.2);
+    lh.top.add(lamp);
+    lh.top.add(box(0.9, 0.6, 0.7, M.white, -0.8, 0, 0.5));
+    animators.push((t) => { lamp.material.emissiveIntensity = 0.4 + (Math.sin(t * 2) * 0.5 + 0.5) * 1.2; });
+
+    const wm = islet(-28, -4, 3.0, 52);
+    for (const [x, z, ph] of [[-0.8, 0.2, 0], [1.0, -0.6, 1.3]]) {
+      wm.top.add(cyl(0.06, 0.1, 2.6, 6, M.white, x, 0, z));
+      const hub = new THREE.Group();
+      hub.position.set(x, 2.6, z + 0.12);
+      for (let i = 0; i < 3; i++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 0.03), M.white);
+        blade.geometry.translate(0, 0.55, 0);
+        blade.rotation.z = (i / 3) * Math.PI * 2;
+        hub.add(blade);
+      }
+      wm.top.add(dyn(hub));
+      animators.push((t) => { hub.rotation.z = t * 1.2 + ph; });
+    }
+
+    const beach = islet(15, 27, 2.6, 53);
+    [['#e46a8c', -0.8, 0.3], ['#f2c14e', 0.2, -0.4], ['#2f7dd3', 0.9, 0.5]].forEach(([c, x, z]) => {
+      beach.top.add(cyl(0.025, 0.025, 0.8, 5, M.white, x, 0, z));
+      beach.top.add(cyl(0, 0.55, 0.25, 8, mat(c), x, 0.7, z));
+      beach.top.add(box(0.35, 0.03, 0.7, mat(c), x + 0.3, 0, z + 0.3));
+    });
+
+    const rocks = islet(-20, 25, 2.0, 54);
+    for (let i = 0; i < 5; i++) {
+      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4 + (i % 3) * 0.2, 0), M.rockDark);
+      r.position.set(Math.cos(i * 1.3) * 0.8, 0.25, Math.sin(i * 1.3) * 0.8);
+      r.rotation.set(i, i * 2, 0);
+      r.castShadow = true;
+      rocks.top.add(r);
+    }
+
+    const terrace = islet(-31, 15, 3.0, 55);
+    [2.4, 1.9, 1.4, 0.9].forEach((r, i) => terrace.top.add(cyl(r, r + 0.15, 0.35, 12, mat(i % 2 ? '#9cc27a' : '#b6d494'), 0, i * 0.35, 0)));
+
+    const grove = islet(29, -15, 2.6, 56);
+    grove.root.updateMatrixWorld(true);
+    for (let i = 0; i < 5; i++) {
+      const v = grove.root.localToWorld(new THREE.Vector3(Math.cos(i * 1.25) * 1.2, TOP * 0.38, Math.sin(i * 1.25) * 1.2));
+      treeSpots.push(v);
+    }
+    [lh, wm, beach, rocks, terrace, grove].forEach(({ root }) => mergeStatic(root));
+  }
+  buildTrees(treeSpots);
 
   // ---------- 互動 ----------
   const raycaster = new THREE.Raycaster();
@@ -964,10 +1166,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     focused = id;
     controls.autoRotate = false;
     const small = window.matchMedia('(max-width: 760px)').matches;
-    const out = isle.pos.clone().normalize();
+    // 模型都朝 +z，所以鏡頭從南側（+z）略偏向該格所在的一側看過去
+    const out = new THREE.Vector3(isle.pos.x * 0.05, 0, 1).normalize();
     // 鏡頭對準島上方的政策小舞台，島本身在畫面下緣
     const target = isle.pos.clone().setY(STAGE_Y + 1.1);
-    const camPos = isle.pos.clone().add(out.multiplyScalar(small ? 10.5 : 6.6)).setY(STAGE_Y + (small ? 4.8 : 3.0));
+    const camPos = isle.pos.clone().add(out.multiplyScalar(small ? 12.5 : 9.0)).setY(STAGE_Y + (small ? 5.6 : 4.0));
     setInset();
     flyTo(camPos, target);
   }
@@ -977,7 +1180,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     disposeStage();
     setInset();
     flyTo(HOME.pos, HOME.target, 1.4);
-    if (!reduceMotion) setTimeout(() => { if (!focused) controls.autoRotate = true; }, 1500);
   }
 
   // ---------- filters / modes ----------
@@ -997,8 +1199,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     });
   }
 
-  let nightT = 0, nightTarget = 0;
-  const setNight = (on) => { nightTarget = on ? 1 : 0; };
 
   let paused = false;
   const setPaused = (p) => { paused = p; };
@@ -1049,28 +1249,56 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   let elapsed = 0;
   const tmpColor = new THREE.Color();
 
-  function applyNight(k) {
-    scene.background.copy(DAY.sky).lerp(NIGHT.sky, k);
-    scene.fog.color.copy(DAY.fog).lerp(NIGHT.fog, k);
-    waterMat.color.copy(DAY.water).lerp(NIGHT.water, k);
-    hemi.color.copy(DAY.hemiSky).lerp(NIGHT.hemiSky, k);
-    hemi.groundColor.copy(DAY.hemiGround).lerp(NIGHT.hemiGround, k);
-    hemi.intensity = THREE.MathUtils.lerp(DAY.hemi, NIGHT.hemi, k);
-    sun.color.copy(DAY.sun).lerp(NIGHT.sun, k);
-    sun.intensity = THREE.MathUtils.lerp(DAY.sunI, NIGHT.sunI, k);
+  // 時段：從目前的光線內插到目標時段
+  const cur = toPalette(TIMES.day);
+  let todFrom = null, todTo = PALETTES.day, todT = 1, todKey = 'day';
+  const snapshot = (p) => ({
+    sky: p.sky.clone(), fog: p.fog.clone(), water: p.water.clone(), shallow: p.shallow.clone(), hemiSky: p.hemiSky.clone(),
+    hemiGround: p.hemiGround.clone(), hemi: p.hemi, sun: p.sun.clone(), sunI: p.sunI, sunPos: p.sunPos.clone(), glow: p.glow, cloud: p.cloud,
+  });
+  function applyPalette(p) {
+    scene.background.copy(p.sky);
+    scene.fog.color.copy(p.fog);
+    waterMat.color.copy(p.water);
+    waterShallow.value.copy(p.shallow);
+    hemi.color.copy(p.hemiSky);
+    hemi.groundColor.copy(p.hemiGround);
+    hemi.intensity = p.hemi;
+    sun.color.copy(p.sun);
+    sun.intensity = p.sunI;
+    sun.position.copy(p.sunPos);
+    const k = p.glow;
     glowMats.forEach((m) => {
       if (m === windowMat) m.emissiveIntensity = THREE.MathUtils.lerp(m.userData.base, 1.3, k);
       else if (m.userData.base !== undefined && m !== cyanMat) m.emissiveIntensity = THREE.MathUtils.lerp(m.userData.base, 1.4, k);
     });
     cyanMat.emissiveIntensity = THREE.MathUtils.lerp(0.6, 1.6, k);
-    cloudMat.opacity = THREE.MathUtils.lerp(0.92, 0.25, k);
+    cloudMat.opacity = p.cloud;
   }
+  function setTimeOfDay(key) {
+    if (!PALETTES[key]) return;
+    todKey = key;
+    todFrom = snapshot(cur);
+    todTo = PALETTES[key];
+    todT = reduceMotion ? 0.999 : 0;
+  }
+  function stepTimeOfDay(dt) {
+    if (todT >= 1) return false;
+    todT = Math.min(1, todT + dt / 1.4);
+    const k = easeInOut(todT);
+    for (const key of ['sky', 'fog', 'water', 'shallow', 'hemiSky', 'hemiGround', 'sun']) cur[key].copy(todFrom[key]).lerp(todTo[key], k);
+    for (const key of ['hemi', 'sunI', 'glow', 'cloud']) cur[key] = THREE.MathUtils.lerp(todFrom[key], todTo[key], k);
+    cur.sunPos.copy(todFrom.sunPos).lerp(todTo.sunPos, k);
+    applyPalette(cur);
+    return true;
+  }
+  const setNight = (on) => setTimeOfDay(on ? 'night' : 'day');
 
   function frame(now) {
     // 清單／時間軸蓋住整個畫面時完全不繪製
     if (paused) { clock.getDelta(); return; }
     const t = performance.now();
-    const busy = tween || t - lastInput < 1500 || Math.abs(nightTarget - nightT) > 0.001;
+    const busy = tween || t - lastInput < 1500 || todT < 1;
     if (isSmall && !busy) {
       skipAcc += clock.getDelta();
       if (skipAcc < 1 / 30) return;
@@ -1126,10 +1354,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         });
       });
 
-      if (Math.abs(nightTarget - nightT) > 0.001) {
-        nightT += (nightTarget - nightT) * 0.06;
-        applyNight(nightT);
-      }
+      stepTimeOfDay(rawDt);
     }
 
     if (tween) {
@@ -1183,7 +1408,10 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
   // 開場：從遠處推近
   flyTo(HOME.pos, HOME.target, 2.4);
-  applyNight(0);
+  applyPalette(cur);
 
-  return { focusTheme, resetView, setStatusFilter, setNight, setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement };
+  return {
+    focusTheme, resetView, setStatusFilter, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
+    setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
+  };
 }
