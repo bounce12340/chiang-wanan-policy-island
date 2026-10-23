@@ -63,6 +63,8 @@ export function createCrowd(scene, capacity = 96) {
       scale: (o.scale ?? 1) * (o.kid ? 0.68 : 1),
       path: o.path || null, pathT: o.pathT ?? 0, pathLen: 0,
       handR: new THREE.Vector3(), handL: new THREE.Vector3(),
+      head: new THREE.Vector3(), // 頭部的世界座標，給點選與對話泡泡用
+      meta: o.meta || null, // 這個人代表的政策 {themeId, itemId}
     };
     if (p.path) {
       p.segs = [];
@@ -188,8 +190,9 @@ export function createCrowd(scene, capacity = 96) {
     for (const p of people) {
       if (!p) continue;
       const tt = t * p.speed;
-      // 沿路徑移動
-      if (p.path && p.pathLen > 0) {
+      // 沿路徑移動（被點選時停下來，hold 期間不走）
+      if (p.hold) p.holdT = (p.holdT ?? tt) ; else if (p.holdT !== undefined) { p.pathT -= ((tt - p.holdT) * (p.anim === 'jog' ? 0.5 : 0.28)) / (p.pathLen || 1); p.holdT = undefined; }
+      if (p.path && p.pathLen > 0 && !p.hold) {
         let d = ((tt * (p.anim === 'jog' ? 0.5 : 0.28) + p.pathT * p.pathLen) % p.pathLen + p.pathLen) % p.pathLen;
         for (const sg of p.segs) {
           if (d <= sg.len) {
@@ -202,7 +205,7 @@ export function createCrowd(scene, capacity = 96) {
           d -= sg.len;
         }
       }
-      const P = pose(p.anim, tt, p.phase);
+      const P = pose(p.hold ? 'wave' : p.anim, tt, p.phase);
       const sitDrop = P.sit * 0.14;
       e.set(P.lean, p.rot, P.sway, 'YXZ');
       q.setFromEuler(e);
@@ -213,6 +216,7 @@ export function createCrowd(scene, capacity = 96) {
       parts.torso.setMatrixAt(p.i, m.multiplyMatrices(base, local));
       local.makeTranslation(0, DIM.headY, 0);
       parts.head.setMatrixAt(p.i, m.multiplyMatrices(base, local));
+      p.head.setFromMatrixPosition(m);
       local.makeTranslation(0, DIM.headY + 0.01, 0);
       parts.hair.setMatrixAt(p.i, m.multiplyMatrices(base, local));
       limb(parts.legL, p.i, -DIM.legX, DIM.hip, P.llx, 0);
@@ -225,5 +229,25 @@ export function createCrowd(scene, capacity = 96) {
     Object.values(parts).forEach((mesh) => { mesh.instanceMatrix.needsUpdate = true; });
   }
 
-  return { add, remove, update, count: () => people.filter(Boolean).length };
+  // 螢幕座標點選：找離指標最近、在半徑內的人（人物很小，直接射線很難點中，手機更是）
+  const proj = new THREE.Vector3();
+  function nearest(camera, x, y, width, height, radius = 26) {
+    let best = null, bestD = radius;
+    for (const p of people) {
+      if (!p || !p.meta) continue;
+      for (const dy of [0, -0.22 * p.scale]) { // 頭和身體中段都算
+        proj.copy(p.head);
+        proj.y += dy;
+        proj.project(camera);
+        if (proj.z > 1 || proj.z < -1) continue;
+        const sx = (proj.x + 1) / 2 * width, sy = (1 - proj.y) / 2 * height;
+        const d = Math.hypot(sx - x, sy - y);
+        if (d < bestD) { bestD = d; best = p; }
+      }
+    }
+    return best;
+  }
+
+  const alive = (p) => !!p && people[p.i] === p;
+  return { add, remove, update, nearest, alive, each: (fn) => people.forEach((p) => p && fn(p)), count: () => people.filter(Boolean).length };
 }

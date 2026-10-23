@@ -55,7 +55,7 @@ function rng(seed) {
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem }) {
+export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson }) {
   const isSmall = window.matchMedia('(max-width: 760px)').matches;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -672,8 +672,13 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       return { x: 0.6 + Math.cos(a) * 1.95, z: 0.3 + Math.sin(a) * 1.95, rot: Math.atan2(Math.cos(a), Math.sin(a)), anim: 'cheer', phase: i * 0.8, kid: i % 3 === 0 };
     }),
   };
+  const STATUS_RANK = { done: 0, in_progress: 1, proposal: 2, pledge: 3 };
   islands.forEach((isle, id) => {
-    (RESIDENTS[id] || []).forEach((o) => crowd.add(isle.root, { ...o, y: TOP + (o.y || 0) }));
+    const items = [...isle.theme.items].sort((a, b) => (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9));
+    (RESIDENTS[id] || []).forEach((o, k) => crowd.add(isle.root, {
+      ...o, y: TOP + (o.y || 0),
+      meta: items.length ? { themeId: id, itemId: items[k % items.length].id } : null,
+    }));
   });
 
   // ---------- 政策小場景：浮在島上方的小舞台 ----------
@@ -748,7 +753,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         return g;
       },
       person(o = {}) {
-        const p = crowd.add(content, o);
+        const p = crowd.add(content, { ...o, meta: { themeId: st.themeId, itemId: st.itemId } });
         if (p) st.people.push(p);
         return p || { handR: new THREE.Vector3(), handL: new THREE.Vector3() };
       },
@@ -821,6 +826,37 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     stage.root.position.y = STAGE_Y + Math.sin(elapsed * 0.9) * 0.08;
     for (const fn of stage.anims) fn(t);
   }
+
+  // ---------- 居民對話泡泡 ----------
+  // 被點的人停下來揮手；泡泡掛在他所在的島（或小舞台）上，跟著一起浮動，不會亂跑
+  const bubbleAnchor = new THREE.Object3D();
+  let bubble = null; // { person, obj }
+  function showBubble(person, el) {
+    hideBubble();
+    person.hold = true;
+    person.anchor.add(bubbleAnchor);
+    person.anchor.updateMatrixWorld(true);
+    bubbleAnchor.position.copy(person.anchor.worldToLocal(person.head.clone()));
+    bubbleAnchor.position.y += 0.12;
+    const obj = new CSS2DObject(el);
+    bubbleAnchor.add(obj);
+    bubble = { person, obj };
+    labelRenderer.domElement.classList.add('bubbling');
+  }
+  function hideBubble() {
+    if (!bubble) return;
+    bubble.person.hold = false;
+    labelRenderer.domElement.classList.remove('bubbling');
+    bubbleAnchor.remove(bubble.obj);
+    bubble.obj.element.remove();
+    bubbleAnchor.parent?.remove(bubbleAnchor);
+    bubble = null;
+  }
+  function updateBubble() {
+    if (!bubble) return;
+    if (!crowd.alive(bubble.person)) { hideBubble(); onBubbleGone?.(); }
+  }
+  let onBubbleGone = null;
 
   const hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
   function syncBeacons() {
@@ -1116,8 +1152,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     down = { x: e.clientX, y: e.clientY, t: performance.now() };
     controls.autoRotate = false;
   });
+  const personAt = (clientX, clientY, touch) => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    return crowd.nearest(camera, clientX - rect.left, clientY - rect.top, rect.width, rect.height, touch ? 34 : 22);
+  };
   el.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
+    const person = personAt(e.clientX, e.clientY, false);
+    if (person) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
     setHover(pick(e.clientX, e.clientY), e.clientX, e.clientY);
   });
   el.addEventListener('pointerleave', () => setHover(null));
@@ -1126,6 +1168,9 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
     down = null;
     if (moved > 7) return;
+    const person = personAt(e.clientX, e.clientY, e.pointerType === 'touch');
+    if (person && onSelectPerson) { onSelectPerson(person.meta, person); return; }
+    if (bubble) { hideBubble(); onBubbleGone?.(); } // 點別處就收起泡泡
     const h = pick(e.clientX, e.clientY);
     if (!h) return;
     if (h.itemId) onSelectItem(h.themeId, h.itemId);
@@ -1156,6 +1201,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       const hero = document.getElementById('hero'), idx = document.getElementById('index'), legend = document.getElementById('legend');
       const bar = document.querySelector('.topbar');
       let L = 0, R = W, T = bar ? bar.getBoundingClientRect().bottom : 0, B = H;
+      const tb = document.getElementById('timebar');
+      if (shown(tb)) T = Math.max(T, rect('timebar').bottom);
       if (small) {
         if (shown(hero)) B = rect('hero').top;
         else if (shown(legend)) B = rect('legend').top;
@@ -1204,19 +1251,43 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
 
   // ---------- filters / modes ----------
   let statusFilter = null;
-  function setStatusFilter(s) {
-    statusFilter = s;
+  // 日期字串 → 時間戳；只有年或年月的，取該期間中段
+  const toTime = (d) => {
+    if (!d) return Infinity;
+    const [y, m, day] = d.split('-').map(Number);
+    if (!m) return Date.UTC(y, 6, 1);
+    if (!day) return Date.UTC(y, m - 1, 15);
+    return Date.UTC(y, m - 1, day);
+  };
+  beaconList.forEach((b) => { b.userData.t = toTime(b.userData.item.date); });
+
+  let timeCut = null; // null = 不依時間篩選
+  function applyBeaconFilters({ flashNew = false } = {}) {
+    const appeared = [];
     islands.forEach((isle) => {
       let shown = 0;
       isle.beacons.forEach((b) => {
-        const ok = !s || b.userData.item.status === s;
+        const ok = (!statusFilter || b.userData.item.status === statusFilter) && (timeCut === null || b.userData.t <= timeCut);
+        if (ok && !b.userData.shown && flashNew) { b.userData.flash = 1; appeared.push(b.userData.item); }
         b.userData.shown = ok;
         if (ok) shown++;
       });
-      isle.label.classList.toggle('is-dim', !!s && shown === 0);
+      const filtering = !!statusFilter || timeCut !== null;
+      isle.label.classList.toggle('is-dim', filtering && shown === 0);
       const small = isle.label.querySelector('small');
-      if (small) small.textContent = s ? `${shown}/${isle.beacons.length}` : String(isle.beacons.length);
+      if (small) small.textContent = filtering ? `${shown}/${isle.beacons.length}` : String(isle.beacons.length);
     });
+    return appeared;
+  }
+  function setStatusFilter(s) {
+    statusFilter = s;
+    applyBeaconFilters();
+  }
+  function setTimeCut(t) {
+    const prev = timeCut;
+    timeCut = t;
+    // 往後拖時，新出現的光點彈跳一下
+    return applyBeaconFilters({ flashNew: t !== null && prev !== null && t > prev });
   }
 
 
@@ -1389,6 +1460,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     applyInset(rawDt);
     scene.updateMatrixWorld();
     crowd.update(elapsed);
+    updateBubble();
     syncBeacons();
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
@@ -1417,10 +1489,17 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         const p = isle.root.position.clone().setY(2.6).project(camera);
         out[id] = [Math.round((p.x + 1) / 2 * container.clientWidth), Math.round((1 - p.y) / 2 * container.clientHeight)];
       });
+      const people = [];
+      const v = new THREE.Vector3();
+      crowd.each((p) => {
+        if (!p.meta) return;
+        v.copy(p.head).project(camera);
+        people.push({ ...p.meta, x: Math.round((v.x + 1) / 2 * container.clientWidth), y: Math.round((1 - v.y) / 2 * container.clientHeight) });
+      });
       let meshes = 0;
       scene.traverse((o) => { if (o.isMesh) meshes++; });
       return {
-        cam: camera.position.toArray().map((v) => +v.toFixed(2)), target: controls.target.toArray().map((v) => +v.toFixed(2)), inset: [inset.x, inset.tx], focused, view: camera.view, out,
+        people, cam: camera.position.toArray().map((v) => +v.toFixed(2)), target: controls.target.toArray().map((v) => +v.toFixed(2)), inset: [inset.x, inset.tx], focused, view: camera.view, out,
         info: { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, meshes, pixelRatio: renderer.getPixelRatio(), shadows: renderer.shadowMap.enabled },
       };
     };
@@ -1433,7 +1512,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   inset.x = inset.tx; // 開場直接到位，不要滑動
 
   return {
-    focusTheme, resetView, setStatusFilter, refreshLayout: setInset, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
+    focusTheme, resetView, setStatusFilter, setTimeCut, refreshLayout: setInset,
+    showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
   };
 }

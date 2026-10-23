@@ -98,6 +98,8 @@ async function boot() {
     if (!theme) return;
     currentTheme = id;
     hideHero();
+    closeBubble();
+    resetTimeline();
     const sorted = [...theme.items].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
     const tc = Object.fromEntries(STATUS_ORDER.map((s) => [s, theme.items.filter((i) => i.status === s).length]));
     const idx = themes.indexOf(theme);
@@ -142,6 +144,7 @@ async function boot() {
   function closePanel() {
     if (!currentTheme) return;
     currentTheme = null;
+    closeBubble();
     markIndexActive();
     panel.classList.remove('is-open');
     panel.setAttribute('aria-hidden', 'true');
@@ -185,7 +188,7 @@ async function boot() {
   });
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePanel();
+    if (e.key === 'Escape') { if (bubbleOpen) { closeBubble(); return; } closePanel(); }
     if (!currentTheme || view !== 'island') return;
     const idx = themes.findIndex((t) => t.id === currentTheme);
     if (e.key === 'ArrowRight') openTheme(themes[(idx + 1) % themes.length].id);
@@ -356,6 +359,121 @@ async function boot() {
   $('#btn-about').addEventListener('click', () => about.showModal());
   about.addEventListener('click', (e) => { if (e.target === about) about.close(); });
 
+  // ---------- 點居民：對話泡泡講一項相關政策 ----------
+  let bubbleOpen = false;
+  function closeBubble() {
+    if (!bubbleOpen) return;
+    bubbleOpen = false;
+    world?.hideBubble();
+  }
+  function showPersonBubble(meta, person) {
+    if (!meta) return;
+    const theme = byId.get(meta.themeId);
+    const item = theme?.items.find((i) => i.id === meta.itemId);
+    if (!item) return;
+    const st = STATUS[item.status];
+    const outer = document.createElement('div');
+    outer.className = 'bubble-anchor';
+    outer.innerHTML = `<div class="bubble" role="dialog" aria-label="${esc(item.title)}">
+      <button class="bubble-x" type="button" aria-label="關閉">×</button>
+      <div class="bubble-top"><span class="badge" style="background:${st.color}">${st.label}</span><span class="bubble-theme">${esc(theme.name)}</span></div>
+      <b>${esc(item.title)}</b>
+      ${item.facts?.[0] ? `<p>${esc(item.facts[0])}</p>` : ''}
+      <button class="bubble-more" type="button">看詳情與來源 →</button>
+    </div>`;
+    // 泡泡裡的點擊不要穿透到 3D 場景
+    outer.addEventListener('pointerdown', (e) => e.stopPropagation());
+    outer.querySelector('.bubble-x').addEventListener('click', (e) => { e.stopPropagation(); closeBubble(); });
+    outer.querySelector('.bubble-more').addEventListener('click', (e) => { e.stopPropagation(); closeBubble(); openTheme(meta.themeId, meta.itemId); });
+    world.showBubble(person, outer);
+    bubbleOpen = true;
+  }
+
+  // ---------- 任期時間軸：依事件日期讓政策光點逐一亮起 ----------
+  const DAY_MS = 86400000;
+  const termStart = Date.UTC(2022, 11, 25); // 2022-12-25 就任
+  const [uy, um, ud] = data.meta.updated.split('-').map(Number);
+  const termEnd = Date.UTC(uy, um - 1, ud);
+  const totalDays = Math.round((termEnd - termStart) / DAY_MS);
+  const tbRange = $('#tb-range'), tbDate = $('#tb-date'), tbCount = $('#tb-count'), tbTicker = $('#tb-ticker'), tbReset = $('#tb-reset'), tbPlay = $('#tb-play');
+  const itemTime = (d) => {
+    const [y, m, day] = d.split('-').map(Number);
+    return !m ? Date.UTC(y, 6, 1) : !day ? Date.UTC(y, m - 1, 15) : Date.UTC(y, m - 1, day);
+  };
+  const dated = allItems.filter((i) => i.date).map((i) => ({ ...i, t: itemTime(i.date) }));
+  tbRange.min = 0;
+  tbRange.max = totalDays;
+  tbRange.step = 1;
+  tbRange.value = totalDays;
+  $('#tb-ticks').innerHTML = [2023, 2024, 2025, 2026].map((y) => {
+    const pct = ((Date.UTC(y, 0, 1) - termStart) / DAY_MS / totalDays) * 100;
+    return `<span style="left:${pct}%">${y}</span>`;
+  }).join('');
+  const fmtCut = (t) => { const d = new Date(t); return `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
+  let timeActive = false;
+  function applyTime({ fromPlay = false } = {}) {
+    const v = +tbRange.value;
+    const atEnd = v >= totalDays;
+    const cut = termStart + v * DAY_MS;
+    const shownN = atEnd ? allItems.length : dated.filter((i) => i.t <= cut).length;
+    tbDate.textContent = atEnd ? `至 ${fmtDate(data.meta.updated)}` : fmtCut(cut);
+    tbCount.textContent = `${shownN} / ${allItems.length} 項`;
+    tbRange.style.setProperty('--pct', `${(v / totalDays) * 100}%`);
+    tbReset.hidden = atEnd;
+    $('#tb-hint').hidden = !atEnd;
+    timeActive = !atEnd;
+    const appeared = world?.setTimeCut(atEnd ? null : cut) || [];
+    // 顯示「最近一項」：播放時是剛亮起的那項，拖動時是截至該日最新的一項
+    const latest = fromPlay && appeared.length ? appeared[appeared.length - 1]
+      : (!atEnd ? dated.filter((i) => i.t <= cut).sort((a, b) => b.t - a.t)[0] : null);
+    if (latest) {
+      const full = allItems.find((i) => i.id === latest.id);
+      tbTicker.hidden = false;
+      tbTicker.dataset.theme = full.theme.id;
+      tbTicker.dataset.item = full.id;
+      tbTicker.innerHTML = `<i style="background:${STATUS[full.status].color}"></i><span>${esc(fmtDate(full.date))}</span>${esc(full.title)}`;
+    } else {
+      tbTicker.hidden = true;
+    }
+  }
+  let playing = false, playRaf = 0, playLast = 0;
+  function stopPlay() {
+    playing = false;
+    cancelAnimationFrame(playRaf);
+    $('#timebar').classList.remove('is-playing');
+    tbPlay.setAttribute('aria-label', '播放任期時間軸');
+  }
+  function startPlay() {
+    if (+tbRange.value >= totalDays) tbRange.value = 0;
+    playing = true;
+    playLast = performance.now();
+    $('#timebar').classList.add('is-playing');
+    tbPlay.setAttribute('aria-label', '暫停');
+    hideHero();
+    const step = (now) => {
+      if (!playing) return;
+      // 約 16 秒播完整個任期
+      const next = Math.min(totalDays, +tbRange.value + ((now - playLast) / 16000) * totalDays);
+      playLast = now;
+      tbRange.value = next;
+      applyTime({ fromPlay: true });
+      if (next >= totalDays) { stopPlay(); return; }
+      playRaf = requestAnimationFrame(step);
+    };
+    applyTime();
+    playRaf = requestAnimationFrame(step);
+  }
+  function resetTimeline() {
+    stopPlay();
+    if (!timeActive) return;
+    tbRange.value = totalDays;
+    applyTime();
+  }
+  tbRange.addEventListener('input', () => { stopPlay(); applyTime(); });
+  tbPlay.addEventListener('click', () => (playing ? stopPlay() : startPlay()));
+  tbReset.addEventListener('click', resetTimeline);
+  tbTicker.addEventListener('click', () => openTheme(tbTicker.dataset.theme, tbTicker.dataset.item));
+
   // ---------- 3D world ----------
   try {
     const probe = document.createElement('canvas');
@@ -367,7 +485,9 @@ async function boot() {
       onSelectTheme: (id) => openTheme(id),
       onSelectItem: (id, itemId) => openTheme(id, itemId),
       onHoverItem,
+      onSelectPerson: (meta, person) => showPersonBubble(meta, person),
     });
+    world.onBubbleGone(() => { bubbleOpen = false; });
   } catch (err) {
     console.warn('3D 場景無法啟動，改用清單檢視：', err);
     const islandBtn = document.querySelector('[data-view="island"]');
@@ -382,6 +502,8 @@ async function boot() {
     note.querySelector('button').addEventListener('click', () => location.reload());
     document.querySelector('#list-inner').prepend(note);
   }
+
+  applyTime();
 
   // ---------- deep link ----------
   function fromHash() {

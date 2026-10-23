@@ -16,7 +16,8 @@ The site's interface and content are in Traditional Chinese.
   - **Re-election pledge** — future commitments made during the campaign
 - **Three views:** 3D islands, list, and timeline, with a status filter and a day/night toggle
 - **Policy scenes:** every item has its own animated mini-diorama that floats above its island, e.g. an adult handing a child a bottle of milk for the free-milk program, or a cheering crowd around the Taipei Dome. The scene follows whichever card you are reading in the panel.
-- **Island residents:** small animated people on each island that match its theme
+- **Island residents:** small animated people on each island that match its theme. Tap one and they stop, wave, and show a speech bubble with one sourced fact from that policy area, with a link to the full item.
+- **Term timeline slider:** drag or play through 2022-12 → today; policy markers light up by each item's event date (opening, signing, announcement), with a ticker showing the latest item. The date reflects the recorded event, not when work on a policy began.
 - **Deep links** to any island or item, e.g. `#/transport` or `#/housing/housing-happy`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
 

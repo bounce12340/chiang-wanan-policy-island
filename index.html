@@ -65,10 +65,31 @@
     <img class="hero-art" src="./assets/key.webp" alt="六角形城市群島的低多邊形插畫（AI 生成）" width="1600" height="896">
     <p class="hero-kicker">2022–2026 任期 ・ 2026 連任選舉</p>
     <h2>一座島，一個政策領域。</h2>
-    <p class="hero-body">點選任何一座島，查看該領域的施政項目與狀態。每一項都附上公開來源，方便你自己查證。</p>
+    <p class="hero-body">點選任何一座島，查看該領域的施政項目與狀態；也可以點島上的居民，或拖動上方的任期時間軸。每一項都附上公開來源，方便你自己查證。</p>
     <div class="hero-stats" id="hero-stats"></div>
     <p class="hero-note" id="hero-note"></p>
     <button class="cta" id="btn-start">開始探索</button>
+  </section>
+
+  <section class="timebar" id="timebar" aria-label="任期時間軸">
+    <button class="tb-play" id="tb-play" type="button" aria-label="播放任期時間軸">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    </button>
+    <div class="tb-main">
+      <div class="tb-top">
+        <span class="tb-kicker">任期時間軸</span>
+        <b class="tb-date" id="tb-date"></b>
+        <span class="tb-count" id="tb-count"></span>
+        <button class="tb-reset" id="tb-reset" type="button" hidden>全部顯示</button>
+      </div>
+      <div class="tb-track">
+        <input type="range" id="tb-range" aria-label="拖動選擇日期">
+        <div class="tb-ticks" id="tb-ticks" aria-hidden="true"></div>
+      </div>
+      <button class="tb-ticker" id="tb-ticker" type="button" hidden></button>
+      <p class="tb-hint" id="tb-hint">拖動或播放：各項依資料中的事件日期（通車、簽約、公布等）亮起，不代表開始推動的時間</p>
+    </div>
   </section>
 
   <aside class="legend" id="legend" aria-label="狀態篩選">
@@ -113,6 +134,8 @@
       <li>內容取自臺北市政府公開資訊與主流媒體報導，每一項都附來源連結與日期。</li>
       <li>狀態分為四類：<b>已完成</b>（已實施或啟用）、<b>進行中</b>（施工或推動中）、<b>規劃中</b>（市府提議、爭取中，尚未定案）、<b>連任政見</b>（競選期間提出的未來承諾）。</li>
       <li>只描述做了什麼、提了什麼，不評價政策好壞。政策效果請參考各方評論與官方數據。</li>
+      <li>任期時間軸依每一項資料中的事件日期（例如通車、簽約、公布日）排列，不代表該政策開始推動的時間；光點顏色為目前狀態。</li>
+      <li>點島上的居民會顯示一項該領域的政策事實，居民只是示意角色，不代表任何真實人物的意見。</li>
     </ul>
     <h3>選舉背景</h3>
     <div id="about-campaign"></div>
