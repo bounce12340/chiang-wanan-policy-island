@@ -628,3 +628,11 @@ body.link-mode .timebar, body.link-mode .legend { display: none !important; }
 }
 @media (max-width: 760px) { .hero-stories button { padding: 4px 8px; font-size: 12px; } }
 .isle-label:focus-visible, .link-pill:focus-visible, .share-btn:focus-visible, .copy-btn:focus-visible { outline: 3px solid #2f7dd3; outline-offset: 2px; }
+
+/* ---------- 行政區地標 ---------- */
+.district-label { pointer-events: none; padding: 3px 8px; border-radius: 999px; background: rgba(251,248,242,.82); color: #3d4a66; font-size: 11px; font-weight: 500; white-space: nowrap; box-shadow: 0 2px 8px rgba(20,33,61,.12); }
+.district-label b { color: #14213d; font-weight: 900; margin-right: 4px; }
+body.night .district-label { background: rgba(18,26,46,.8); color: #b7c1d8; }
+body.night .district-label b { color: #eef2fb; }
+.hide-labels .district-label, .staging .district-label, .bubbling .district-label, body.touring .district-label { opacity: 0; }
+@media (max-width: 760px) { .district-label { font-size: 9.5px; padding: 2px 6px; } }

@@ -23,6 +23,7 @@ The site's interface and content are in Traditional Chinese.
   - Researched in two rounds, then independently reviewed item by item; data in [`data/pledges2022.json`](data/pledges2022.json)
 - **Policy scenes:** every item has its own animated mini-diorama that floats above its island, e.g. an adult handing a child a bottle of milk for the free-milk program, or a cheering crowd around the Taipei Dome. The scene follows whichever card you are reading in the panel.
 - **Island residents:** about 210 animated people walking the islands and the central plaza. Tap one and they stop, wave, and show a speech bubble with one sourced fact from that policy area, with a link to the full item. All residents share 7 instanced meshes, so the crowd size does not add draw calls.
+- **District landmarks:** the outer ring has one landmark islet for each of Taipei's 12 districts (Xinyi is the Taipei 101 at the centre): Miramar Ferris wheel (Zhongshan), Dahu Park's Jindai Bridge (Neihu), Raohe Night Market and Ciyou Temple (Songshan), Taipei Music Center (Nangang), Maokong Gondola (Wenshan), Daan Forest Park (Da'an), Chiang Kai-shek Memorial Hall (Zhongzheng), Longshan Temple (Wanhua), Dihua Street and Dadaocheng (Datong), Taipei Performing Arts Center (Shilin) and Beitou Thermal Valley (Beitou). Bearings roughly follow real geography; distances are schematic
 - **Three map layers:**
   - **Term record:** one beacon per policy item, coloured by status
   - **2022 pledges:** one sign per 2022 campaign pledge, coloured by fulfilment status; tap for a summary card

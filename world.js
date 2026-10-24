@@ -80,7 +80,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   // 鳥瞰：鏡頭高、視角窄，接近地圖的俯視感
   const camera = new THREE.PerspectiveCamera(isSmall ? 42 : 30, container.clientWidth / container.clientHeight, 0.5, 600);
   const HOME = {
-    pos: isSmall ? new THREE.Vector3(0, 74, 70) : new THREE.Vector3(0, 50, 72),
+    // 鏡頭拉遠一點，讓外圈 12 區地標也入鏡
+    pos: isSmall ? new THREE.Vector3(0, 84, 79) : new THREE.Vector3(0, 59, 85),
     target: new THREE.Vector3(0, 0, isSmall ? 1 : -6),
   };
   camera.position.copy(HOME.pos).multiplyScalar(1.6);
@@ -962,7 +963,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     }
     const el = document.createElement('div');
     el.className = 'center-label';
-    el.innerHTML = '<b>臺北</b><span>2022–2026</span>';
+    el.innerHTML = '<b>臺北</b><span>2022–2026・信義 101</span>';
     const lbl = new CSS2DObject(el);
     lbl.position.set(0, y + 4.6, 0);
     group.add(lbl);
@@ -1011,7 +1012,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     sail.position.y = 0.8;
     b.add(hull, sail);
     b.traverse((o) => { o.castShadow = true; });
-    b.userData = { r: 26 + i * 5, speed: 0.04 + i * 0.012, phase: i * 2.1 };
+    b.userData = { r: [23, 33, 38][i], speed: 0.04 + i * 0.012, phase: i * 2.1 }; // 避開外圈地標島
     scene.add(b);
     boats.push(b);
   }
@@ -1107,7 +1108,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     scene.add(walls, roofs);
   }
 
-  // ---------- 衛星小島：燈塔、風車、沙灘、礁岩、梯田 ----------
+  // ---------- 外圈：12 個行政區各一個代表地標（信義區＝中央的臺北 101） ----------
+  // 方位依實際地理大致排列（北在畫面上方），距離為示意，非實際比例
   {
     const islet = (x, z, r, seed) => {
       const g = islandBase(r, seed).group;
@@ -1121,56 +1123,147 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       scene.add(root);
       return { root, top };
     };
-    const lh = islet(25, 9, 2.4, 51);
-    for (let i = 0; i < 5; i++) lh.top.add(cyl(0.42 - i * 0.04, 0.46 - i * 0.04, 0.55, 10, i % 2 ? mat('#d9604f') : M.white, 0.4, i * 0.55, -0.2));
-    lh.top.add(cyl(0.3, 0.3, 0.35, 8, M.glass, 0.4, 2.75, -0.2));
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), glow('#ffd88a', 0.4));
-    lamp.position.set(0.4, 2.95, -0.2);
-    lh.top.add(lamp);
-    lh.top.add(box(0.9, 0.6, 0.7, M.white, -0.8, 0, 0.5));
-    animators.push((t) => { lamp.material.emissiveIntensity = 0.4 + (Math.sin(t * 2) * 0.5 + 0.5) * 1.2; });
+    const C = (hex) => mat(hex);
+    const red = C('#c4473a'), gold = C('#e2b23c'), blueRoof = C('#2f5aa8'), teal = C('#7cc7b8'), water = C('#7fb8d6');
+    const sq = (rt, rb, h, m, x, y, z) => { const o = cyl(rt, rb, h, 4, m, x, y, z); o.rotation.y = Math.PI / 4; return o; };
+    const placeTrees = (root, pts) => { root.updateMatrixWorld(true); pts.forEach(([x, z]) => treeSpots.push(root.localToWorld(new THREE.Vector3(x, TOP * 0.38, z)))); };
 
-    const wm = islet(-28, -4, 3.0, 52);
-    for (const [x, z, ph] of [[-0.8, 0.2, 0], [1.0, -0.6, 1.3]]) {
-      wm.top.add(cyl(0.06, 0.1, 2.6, 6, M.white, x, 0, z));
-      const hub = new THREE.Group();
-      hub.position.set(x, 2.6, z + 0.12);
-      for (let i = 0; i < 3; i++) {
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.1, 0.03), M.white);
-        blade.geometry.translate(0, 0.55, 0);
-        blade.rotation.z = (i / 3) * Math.PI * 2;
-        hub.add(blade);
-      }
-      wm.top.add(dyn(hub));
-      animators.push((t) => { hub.rotation.z = t * 1.2 + ph; });
-    }
-
-    const beach = islet(15, 27, 2.6, 53);
-    [['#e46a8c', -0.8, 0.3], ['#f2c14e', 0.2, -0.4], ['#2f7dd3', 0.9, 0.5]].forEach(([c, x, z]) => {
-      beach.top.add(cyl(0.025, 0.025, 0.8, 5, M.white, x, 0, z));
-      beach.top.add(cyl(0, 0.55, 0.25, 8, mat(c), x, 0.7, z));
-      beach.top.add(box(0.35, 0.03, 0.7, mat(c), x + 0.3, 0, z + 0.3));
+    const LANDMARKS = [
+      { district: '中山', name: '美麗華摩天輪', deg: 0, build(t) {
+        t.add(box(2.2, 0.7, 1.3, M.white, 0, 0, 0.5));
+        t.add(box(2.24, 0.12, 1.34, red, 0, 0.58, 0.5));
+        [-0.55, 0.55].forEach((x) => { const leg = box(0.08, 2.0, 0.08, M.concrete, x * 0.5, 0.7, -0.35); leg.rotation.z = x > 0 ? -0.28 : 0.28; t.add(leg); });
+        const wheel = new THREE.Group();
+        wheel.position.set(0, 2.6, -0.35);
+        wheel.add(new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.05, 6, 32), M.white));
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.03, 1.25, 0.03), M.white);
+          spoke.position.set(Math.cos(a) * 0.62, Math.sin(a) * 0.62, 0);
+          spoke.rotation.z = a - Math.PI / 2;
+          const cab = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), i % 3 ? C('#f08c3a') : C('#e46a8c'));
+          cab.position.set(Math.cos(a) * 1.25, Math.sin(a) * 1.25, 0.08);
+          wheel.add(spoke, cab);
+        }
+        t.add(dyn(wheel));
+        animators.push((tt) => { wheel.rotation.z = tt * 0.15; });
+      } },
+      { district: '內湖', name: '大湖公園錦帶橋', deg: 32, build(t, root) {
+        t.add(cyl(1.6, 1.6, 0.06, 16, water, 0, 0, 0));
+        const arch = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.1, 6, 20, Math.PI), M.white);
+        arch.position.set(0, 0.06, 0);
+        t.add(arch);
+        t.add(box(1.7, 0.08, 0.32, M.white, 0, 0.82, 0)); // 橋面
+        placeTrees(root, [[-1.6, -1.2], [1.6, -1.0], [1.5, 1.3], [-1.4, 1.4]]);
+      } },
+      { district: '松山', name: '饒河街夜市・慈祐宮', deg: 62, build(t) {
+        t.add(box(1.5, 0.7, 1.0, red, 0.3, 0, -0.6));
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.5, 4), C('#d98a3a'));
+        roof.position.set(0.3, 0.95, -0.6); roof.rotation.y = Math.PI / 4; roof.scale.set(1.15, 1, 0.75); t.add(roof);
+        // 夜市牌樓與燈籠
+        [-0.9, 0.5].forEach((x) => t.add(box(0.14, 1.3, 0.14, red, x, 0, 0.8)));
+        t.add(box(1.7, 0.32, 0.18, red, -0.2, 1.3, 0.8));
+        t.add(box(1.5, 0.08, 0.2, gold, -0.2, 1.62, 0.8));
+        for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), glow('#ff8a4a', 0.5)); l.position.set(-0.85 + i * 0.26, 1.18, 0.95); t.add(l); }
+      } },
+      { district: '南港', name: '臺北流行音樂中心', deg: 96, build(t) {
+        const hall = box(2.1, 1.5, 1.4, M.white, 0, 0, -0.2);
+        t.add(hall);
+        const wedge = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1.0, 2.1, 3), M.white);
+        wedge.rotation.set(0, 0, Math.PI / 2); wedge.scale.set(1, 1, 0.7); wedge.position.set(0, 1.5, -0.2); t.add(wedge);
+        for (let i = 0; i < 4; i++) t.add(box(2.12, 0.05, 0.02, cyanMat, 0, 0.3 + i * 0.3, 0.51));
+        t.add(box(0.9, 0.6, 0.8, M.dark, 0.9, 0, 0.9));
+      } },
+      { district: '文山', name: '貓空纜車', deg: 152, build(t, root) {
+        const hill = new THREE.Mesh(new THREE.ConeGeometry(1.6, 1.6, 7), C('#8cbf6e')); hill.position.set(0.5, 0.8, -0.3); t.add(hill);
+        [1.4, 1.1, 0.8].forEach((r, i) => t.add(cyl(r, r + 0.12, 0.18, 9, C(i % 2 ? '#a8d08a' : '#7fb066'), 0.5, 0.25 + i * 0.4, -0.3)));
+        const A = new THREE.Vector3(-1.5, 1.4, 1.0), B = new THREE.Vector3(0.5, 2.0, -0.3);
+        t.add(cyl(0.05, 0.07, 1.4, 6, M.concrete, A.x, 0, A.z));
+        const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, A.distanceTo(B), 4), M.dark);
+        cable.position.copy(A).lerp(B, 0.5);
+        cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+        t.add(cable);
+        [0, 0.5].forEach((ph) => {
+          const g = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.22), C(ph ? '#2f7dd3' : '#e46a8c'));
+          t.add(dyn(g));
+          animators.push((tt) => { const u = (Math.sin(tt * 0.35 + ph * Math.PI) + 1) / 2; g.position.copy(A).lerp(B, u).y -= 0.16; });
+        });
+        placeTrees(root, [[-1.2, -1.2], [1.6, 1.2]]);
+      } },
+      { district: '大安', name: '大安森林公園', deg: 205, build(t, root) {
+        const shell = new THREE.Mesh(new THREE.SphereGeometry(0.7, 12, 6, 0, Math.PI, 0, Math.PI / 2), M.white);
+        shell.position.set(0, 0, -0.5); t.add(shell);
+        t.add(cyl(0.9, 0.9, 0.05, 10, M.pave, 0, 0, 0.3));
+        t.add(cyl(0.45, 0.45, 0.06, 10, water, 1.1, 0, 0.9));
+        placeTrees(root, [[-1.5, -0.8], [-1.6, 0.6], [-0.9, 1.5], [1.5, -0.6], [0.4, 1.7], [-0.6, -1.6], [1.0, -1.5], [1.8, 0.4]]);
+      } },
+      { district: '中正', name: '中正紀念堂', deg: 236, build(t) {
+        [[2.0, 0.18], [1.7, 0.18], [1.4, 0.18]].forEach(([w, h], i) => t.add(box(w, h, w, M.white, 0, i * 0.18, 0)));
+        t.add(box(1.05, 0.9, 1.05, M.white, 0, 0.54, 0));
+        const r1 = cyl(0.05, 1.0, 0.45, 8, blueRoof, 0, 1.44, 0); r1.rotation.y = Math.PI / 8; t.add(r1);
+        t.add(cyl(0.45, 0.5, 0.25, 8, M.white, 0, 1.75, 0));
+        const r2 = cyl(0.02, 0.62, 0.42, 8, blueRoof, 0, 1.98, 0); r2.rotation.y = Math.PI / 8; t.add(r2);
+        t.add(cyl(0.02, 0.06, 0.28, 6, gold, 0, 2.38, 0));
+      } },
+      { district: '萬華', name: '龍山寺', deg: 260, build(t) {
+        t.add(box(1.8, 0.65, 0.9, red, 0, 0, 0.3));
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(1.3, 0.42, 4), C('#3f7a5e'));
+        roof.position.set(0, 0.86, 0.3); roof.rotation.y = Math.PI / 4; roof.scale.set(1.25, 1, 0.62); t.add(roof);
+        t.add(box(1.3, 0.75, 0.8, red, 0, 0, -0.7));
+        const roof2 = roof.clone(); roof2.position.set(0, 0.98, -0.7); roof2.scale.set(0.95, 1, 0.55); t.add(roof2);
+        t.add(box(2.0, 0.05, 0.08, gold, 0, 1.06, 0.3));
+        [-0.75, 0.75].forEach((x) => t.add(box(0.06, 0.22, 0.06, gold, x, 1.06, 0.3))); // 燕尾脊兩端
+      } },
+      { district: '大同', name: '迪化街・大稻埕', deg: 284, build(t) {
+        ['#e9c9a0', '#d9a28b', '#f1e3c6', '#c9b49a'].forEach((c, i) => {
+          const x = -1.2 + i * 0.8, h = 1.0 + (i % 2) * 0.25;
+          t.add(box(0.74, h, 0.9, C(c), x, 0, 0));
+          const ped = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.3, 3), C(c));
+          ped.position.set(x, h + 0.12, 0.42); ped.rotation.set(Math.PI / 2, 0, 0); ped.scale.set(1, 0.2, 1); ped.rotation.z = 0; t.add(ped);
+          t.add(box(0.5, 0.3, 0.03, windowMat, x, h * 0.55, 0.46));
+          t.add(box(0.5, 0.25, 0.03, M.dark, x, 0.1, 0.46));
+        });
+        t.add(box(2.6, 0.1, 0.5, C('#8a6a4a'), 0, 0, 1.25)); // 碼頭棧道
+      } },
+      { district: '士林', name: '臺北表演藝術中心', deg: 306, build(t) {
+        [-0.6, 0.6].forEach((x) => [-0.4, 0.4].forEach((z) => t.add(box(0.12, 0.5, 0.12, M.concrete, x, 0, z))));
+        t.add(box(1.5, 1.2, 1.3, C('#d9dde2'), 0, 0.5, 0));
+        for (let i = 0; i < 4; i++) t.add(box(1.52, 0.03, 1.32, windowMat, 0, 0.75 + i * 0.25, 0));
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 10), C('#b9c4cf')); ball.position.set(-0.75, 1.05, 0.55); t.add(ball);
+        t.add(box(1.2, 0.55, 0.7, C('#c9ced6'), 0.95, 0.75, -0.25));
+      } },
+      { district: '北投', name: '地熱谷', deg: 332, build(t, root) {
+        t.add(cyl(1.25, 1.25, 0.08, 12, teal, 0, 0, 0.2));
+        for (let i = 0; i < 7; i++) {
+          const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22 + (i % 3) * 0.08, 0), M.rockDark);
+          const a = (i / 7) * Math.PI * 2; r.position.set(Math.cos(a) * 1.35, 0.1, 0.2 + Math.sin(a) * 1.35); t.add(r);
+        }
+        const steamMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false });
+        for (let i = 0; i < 5; i++) {
+          const puff = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), steamMat);
+          const x0 = (i - 2) * 0.35, z0 = 0.2 + ((i * 37) % 5 - 2) * 0.15;
+          t.add(dyn(puff));
+          animators.push((tt) => { const u = ((tt * 0.25 + i / 5) % 1); puff.position.set(x0, 0.2 + u * 1.8, z0); puff.scale.setScalar(0.5 + u * 1.1); });
+        }
+        placeTrees(root, [[-1.6, -1.2], [1.5, -1.3], [1.7, 1.2]]);
+      } },
+    ];
+    const RX = 28, RZ_N = 27, RZ_S = 23; // 南側壓近一點，鳥瞰鏡頭才拍得到
+    LANDMARKS.forEach((L, i) => {
+      const a = THREE.MathUtils.degToRad(L.deg);
+      const x = Math.sin(a) * RX, zc = -Math.cos(a);
+      const z = zc * (zc < 0 ? RZ_N : RZ_S);
+      const isle = islet(x, z, 2.4, 60 + i);
+      isle.root.rotation.y = 0; // 地標一律正面朝鏡頭（+z）
+      L.build(isle.top, isle.root);
+      mergeStatic(isle.root);
+      const el = document.createElement('div');
+      el.className = 'district-label';
+      el.innerHTML = `<b>${L.district}</b>${L.name}`;
+      const lbl = new CSS2DObject(el);
+      lbl.position.set(0, 4.2, 0);
+      isle.root.add(lbl);
     });
-
-    const rocks = islet(-20, 25, 2.0, 54);
-    for (let i = 0; i < 5; i++) {
-      const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.4 + (i % 3) * 0.2, 0), M.rockDark);
-      r.position.set(Math.cos(i * 1.3) * 0.8, 0.25, Math.sin(i * 1.3) * 0.8);
-      r.rotation.set(i, i * 2, 0);
-      r.castShadow = true;
-      rocks.top.add(r);
-    }
-
-    const terrace = islet(-31, 15, 3.0, 55);
-    [2.4, 1.9, 1.4, 0.9].forEach((r, i) => terrace.top.add(cyl(r, r + 0.15, 0.35, 12, mat(i % 2 ? '#9cc27a' : '#b6d494'), 0, i * 0.35, 0)));
-
-    const grove = islet(29, -15, 2.6, 56);
-    grove.root.updateMatrixWorld(true);
-    for (let i = 0; i < 5; i++) {
-      const v = grove.root.localToWorld(new THREE.Vector3(Math.cos(i * 1.25) * 1.2, TOP * 0.38, Math.sin(i * 1.25) * 1.2));
-      treeSpots.push(v);
-    }
-    [lh, wm, beach, rocks, terrace, grove].forEach(({ root }) => mergeStatic(root));
   }
   buildTrees(treeSpots);
 
