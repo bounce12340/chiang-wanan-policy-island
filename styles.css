@@ -627,3 +627,4 @@ body.link-mode .timebar, body.link-mode .legend { display: none !important; }
   .hero-stories button { flex: none; }
 }
 @media (max-width: 760px) { .hero-stories button { padding: 4px 8px; font-size: 12px; } }
+.isle-label:focus-visible, .link-pill:focus-visible, .share-btn:focus-visible, .copy-btn:focus-visible { outline: 3px solid #2f7dd3; outline-offset: 2px; }

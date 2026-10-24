@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createCrowd } from './people.js';
-import { sceneFor } from './vignettes.js';
 
 export const STATUS_COLORS = {
   done: 0x2e9e5b,
@@ -594,6 +593,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const el = document.createElement('button');
     el.className = 'isle-label';
     el.type = 'button';
+    el.setAttribute('aria-label', `政策島 ${String(i + 1).padStart(2, '0')}：${theme.name}，${theme.items.length} 項（按數字鍵 ${i + 1} 也能打開）`);
     // 編號標籤：01 交通
     el.innerHTML = `<em style="color:${theme.color}">${String(i + 1).padStart(2, '0')}</em>${theme.name}<small>${n}</small>`;
     el.addEventListener('click', (e) => { e.stopPropagation(); onSelectTheme(theme.id); });
@@ -780,7 +780,9 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     };
   }
 
+  let wantedStage = null; // 場景程式庫還沒載入時，先記住要演哪一項
   function disposeStage() {
+    wantedStage = null;
     if (!stage) return;
     stage.people.forEach((p) => crowd.remove(p));
     scene.remove(stage.root);
@@ -792,9 +794,19 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     stage = null;
   }
 
+  // 政策小場景的程式庫（約 40 KB）在第一個畫面出來後才載入，不擋住開場
+  let sceneFor = null;
+  const vignettesReady = new Promise((resolve) => setTimeout(resolve, 0))
+    .then(() => import('./vignettes.js')).then((m) => { sceneFor = m.sceneFor; });
   function showVignette(themeId, itemId) {
     const isle = islands.get(themeId);
     if (!isle) return;
+    if (!sceneFor) {
+      wantedStage = [themeId, itemId];
+      vignettesReady.then(() => { if (wantedStage?.[0] === themeId && wantedStage?.[1] === itemId) showVignette(themeId, itemId); });
+      return;
+    }
+    wantedStage = null;
     if (stage && stage.itemId === itemId) return;
     disposeStage();
     const { build, opts } = sceneFor(themeId, itemId);

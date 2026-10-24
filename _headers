@@ -2,7 +2,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-MEv+P7oUXok9g8NRYwKBV+13Fdi/NnS4qgLI+Ykncww='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self' https://encore.taipei; base-uri 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-MEv+P7oUXok9g8NRYwKBV+13Fdi/NnS4qgLI+Ykncww=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'self' https://encore.taipei; base-uri 'self'
 
 /data/*
   Cache-Control: public, max-age=300

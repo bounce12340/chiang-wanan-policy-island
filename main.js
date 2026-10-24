@@ -99,8 +99,9 @@ async function boot() {
     [themes.length, '政策島'], [allItems.length, '施政項目'], [srcCount, '引用來源'],
   ].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
 
-  // 2022 政見兌現：資料另外載入，不擋住首頁
-  loadPledges().then((pd) => {
+  // 2022 政見兌現：資料另外載入，等瀏覽器閒下來再抓，不擋住首頁
+  const whenIdle = (fn) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 2500 }) : setTimeout(fn, 1200));
+  new Promise((r) => whenIdle(r)).then(() => loadPledges()).then((pd) => {
     const stat = document.createElement('div');
     stat.className = 'stat stat-pledge';
     stat.innerHTML = `<b>${pd.items.length}</b><span>2022 政見查證</span>`;
@@ -234,6 +235,11 @@ async function boot() {
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { if (!$('#pledge-pop').hidden) { $('#pledge-pop').hidden = true; return; } if (bubbleOpen) { closeBubble(); return; } closePanel(); }
+    // 數字鍵 1–9 直接打開對應的政策島
+    if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.('input, textarea') && view === 'island' && !tour?.active) {
+      const t = themes[+e.key - 1];
+      if (t) { openTheme(t.id); return; }
+    }
     if (!currentTheme || view !== 'island') return;
     const idx = themes.findIndex((t) => t.id === currentTheme);
     if (e.key === 'ArrowRight') openTheme(themes[(idx + 1) % themes.length].id);
@@ -680,7 +686,7 @@ async function boot() {
     if (b) setLayer(b.dataset.layer);
   });
   if (world) {
-    loadPledges().then((pd) => {
+    new Promise((r) => whenIdle(r)).then(() => loadPledges()).then((pd) => {
       pledgeData = pd;
       world.setPledges(pd.items.map((p) => ({ id: p.id, themeId: pledgeTheme(p), status: p.status })),
         Object.fromEntries(PLEDGE_ORDER.map((s) => [s, PLEDGE_STATUS[s].color])));
