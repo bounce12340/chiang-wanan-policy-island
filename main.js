@@ -8,6 +8,7 @@ const STATUS = {
 const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
 import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, countByStatus, reportUrl } from './pledges.js';
 import { createTour } from './tour.js';
+import { loadMayors, renderMayors } from './mayors.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -355,7 +356,9 @@ async function boot() {
     $('#list-view').hidden = v !== 'list';
     $('#timeline-view').hidden = v !== 'timeline';
     $('#pledges-view').hidden = v !== 'pledges';
+    $('#mayors-view').hidden = v !== 'mayors';
     if (v === 'pledges') ensurePledges();
+    if (v === 'mayors') ensureMayors();
     const islandUi = v === 'island';
     document.body.classList.toggle('hide-labels', !islandUi);
     $('#legend').classList.toggle('is-hidden-ui', false);
@@ -372,6 +375,19 @@ async function boot() {
     if (!t) return null;
     if (!itemId) return t.name;
     return t.items.find((i) => i.id === itemId)?.title || null;
+  }
+  let mayorsReady = null;
+  function ensureMayors() {
+    if (!mayorsReady) {
+      mayorsReady = loadMayors().then((md) => renderMayors($('#mayors-inner'), md, {
+        onOpenTheme: (themeId, itemId) => { setView('island'); openTheme(themeId, itemId); },
+      })).catch((err) => {
+        mayorsReady = null;
+        console.warn(err);
+        $('#mayors-inner').innerHTML = '<p class="lead">市長接力資料載入失敗，請重新整理再試一次。</p>';
+      });
+    }
+    return mayorsReady;
   }
   function ensurePledges() {
     if (!pledgesReady) {
@@ -731,6 +747,7 @@ async function boot() {
     const [, id, itemId] = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/) || [];
     if (id === 'tour') { if (tour && !tour.active) tour.start(); return; }
     if (id === 'story') { if (tour) tour.start(itemId); return; }
+    if (id === 'mayors') { setView('mayors'); return; }
     if (id === 'pledges') {
       setView('pledges');
       if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));
