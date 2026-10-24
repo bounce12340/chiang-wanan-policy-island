@@ -8,8 +8,8 @@ The site's interface and content are in Traditional Chinese.
 
 ## What's inside
 
-- **9 policy islands:** transport, urban development, industry & tech, housing, family & education, senior & health care, safety & resilience, environment, culture & sports
-- **59 policy items, 99 sources**, each tagged with a status:
+- **10 policy islands:** transport, urban development, industry & tech, housing, family & education, senior & health care, safety & resilience, environment, culture & sports, and international exchange (sister cities, city diplomacy, international events and expos, international concerts at the Taipei Dome, foreign investment)
+- **67 policy items, 129 sources**, each tagged with a status:
   - **Done** — implemented or opened
   - **In progress** — under construction or being rolled out
   - **Planned** — proposed by the city or still being pursued, not yet approved

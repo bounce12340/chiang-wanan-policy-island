@@ -765,11 +765,19 @@ export const ITEM_SCENES = {
   'culture-museums': ['gallery'],
   'culture-diplomacy': ['handshake'],
   'culture-its': ['smartTraffic'],
+  'intl-sister-cities': ['handshake'],
+  'intl-twin-city-forum': ['debate'],
+  'intl-trendy-taipei': ['domeCheer'],
+  'intl-smart-city': ['smartTraffic'],
+  'intl-baseball': ['baseball'],
+  'intl-marathon': ['mastersGames'],
+  'intl-dome-concerts': ['domeCheer'],
+  'intl-investment': ['signing'],
 };
 
 export const THEME_DEFAULT = {
   transport: 'busStop', development: 'airportPark', industry: 'startup', housing: 'socialHousing',
-  family: 'milkHandoff', care: 'dayCare', safety: 'firefighters', environment: 'riverside', culture: 'domeCheer',
+  family: 'milkHandoff', care: 'dayCare', safety: 'firefighters', environment: 'riverside', culture: 'domeCheer', international: 'handshake',
 };
 
 export function sceneFor(themeId, itemId) {

@@ -309,7 +309,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   // 六角格座標（axial）→ 世界座標
   const axial = (q, r) => new THREE.Vector3(HEX_GAP * Math.sqrt(3) * (q + r / 2), 0, HEX_GAP * 1.5 * r);
   // 9 個主題地塊環繞中央臺北：內圈 6 格、外圈 3 格，拼成一座城
-  const HEX_SLOTS = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [1, 1], [-2, 1], [2, -1]];
+  const HEX_SLOTS = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [1, 1], [-2, 1], [2, -1], [-1, -1]];
 
   // ---------- theme models（每個領域一組原創小模型）----------
   const T = (hex) => mat(hex);
@@ -504,6 +504,44 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       g.add(roof);
       treeSpots.push([2.3, -1.2], [-2.1, 1.3]);
     },
+    international(g, c) {
+      const accent = T(c);
+      // 會展中心：白色量體＋弧形屋頂
+      g.add(box(2.1, 0.75, 1.1, M.white, 0.9, 0, -1.2));
+      g.add(box(2.12, 0.22, 0.04, M.glass, 0.9, 0.3, -0.64));
+      const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 2.2, 16, 1, false, 0, Math.PI), accent);
+      roof.rotation.z = Math.PI / 2;
+      roof.position.set(0.9, 0.75, -1.2);
+      roof.scale.set(1, 1, 0.9);
+      roof.castShadow = true;
+      g.add(roof);
+      // 會轉的地球儀
+      g.add(cyl(0.18, 0.32, 0.5, 8, M.concrete, -1.1, 0, -0.7));
+      const globe = new THREE.Group();
+      globe.position.set(-1.1, 1.4, -0.7);
+      globe.rotation.z = 0.41;
+      globe.add(new THREE.Mesh(new THREE.SphereGeometry(0.85, 18, 12), T('#5aa9e6')));
+      for (let i = 0; i < 7; i++) {
+        const land = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 + (i % 3) * 0.08, 0), T('#7fbf6a'));
+        const a = i * 0.9, b = (i % 3 - 1) * 0.55;
+        land.position.set(Math.cos(a) * Math.cos(b) * 0.66, Math.sin(b) * 0.66, Math.sin(a) * Math.cos(b) * 0.66);
+        land.scale.setScalar(0.85);
+        globe.add(land);
+      }
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.03, 6, 40), T('#e2b23c'));
+      ring.rotation.y = Math.PI / 2;
+      globe.add(ring);
+      globe.traverse((o) => { o.castShadow = true; });
+      g.add(dyn(globe));
+      animators.push((t) => { globe.rotation.y = t * 0.35; });
+      // 一排各色旗桿
+      ['#d64545', '#2f7dd3', '#f2c14e', '#2e9e5b', '#ffffff', '#e46a8c'].forEach((col, i) => {
+        const x = -1.9 + i * 0.62;
+        g.add(cyl(0.025, 0.03, 1.3, 5, M.concrete, x, 0, 1.25));
+        g.add(box(0.36, 0.22, 0.02, T(col), x + 0.19, 1.05, 1.25));
+      });
+      treeSpots.push([2.3, 0.6], [-2.3, -1.4], [1.9, 1.6]);
+    },
   };
 
   // ---------- trees（InstancedMesh，一次畫完）----------
@@ -667,6 +705,12 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     environment: [
       { anim: 'jog', path: [[-1.9, 1.3], [-0.6, 2.2], [1.0, 2.0], [2.1, 0.8], [1.0, 1.2], [-0.8, 1.5]] },
       { x: -0.9, z: 0.9, anim: 'point', kid: true, rot: -2.6 },
+    ],
+    international: [
+      { anim: 'walk', path: [[-1.6, 0.6], [1.4, 0.4]], shirt: '#2b2f45' },
+      { anim: 'walk', path: [[1.2, 0.8], [-1.4, 0.9]], pathT: 0.5 },
+      { x: -0.3, z: 0.3, anim: 'point', rot: -2.4 },
+      { x: 0.2, z: 0.5, anim: 'wave', kid: true },
     ],
     culture: Array.from({ length: 8 }, (_, i) => {
       const a = Math.PI * 0.18 + (i / 7) * Math.PI * 0.62;

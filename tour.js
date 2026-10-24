@@ -1,4 +1,4 @@
-// 自動導覽：約 70 秒，從「2022 承諾」走到「2026 結果」，鏡頭依序飛過九座島。
+// 自動導覽：約 70 秒，從「2022 承諾」走到「2026 結果」，鏡頭依序飛過十座島。
 // 每一站的字幕都取自 data/ 裡的資料與來源，不另外寫死數字。
 import { PLEDGE_STATUS, PLEDGE_ORDER, countByStatus } from './pledges.js';
 
@@ -14,6 +14,7 @@ const HIGHLIGHTS = [
   ['development', 'development-nangang-bus'],
   ['safety', 'safety-police-pay'],
   ['environment', 'environment-waste'],
+  ['international', 'intl-dome-concerts'],
 ];
 const STOP_SECONDS = 6.5;
 
@@ -101,7 +102,7 @@ export function createTour({ world, themes, byId, loadPledges, onStart, onEnd, o
       kind: 'intro', dur: 6,
       html: `<p class="tour-kicker">臺北施政島・導覽</p>
         <h3>2022 年，蔣萬安提出${total ? ` ${total} 條` : ''}政見。<br>四年後，做到了哪些？</h3>
-        <p>接下來走過九座政策島，每一站都附上資料來源。</p>`,
+        <p>接下來走過十座政策島，每一站都附上資料來源。</p>`,
     }];
     HIGHLIGHTS.forEach(([themeId, itemId, pledgeId]) => {
       const theme = byId.get(themeId);

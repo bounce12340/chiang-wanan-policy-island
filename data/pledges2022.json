@@ -406,11 +406,11 @@
    "origin_url": "https://whoareyou.readr.tw/politics/443",
    "related": [
     {
-     "theme": "culture",
+     "theme": "international",
      "item": "culture-masters"
     },
     {
-     "theme": "culture",
+     "theme": "international",
      "item": "culture-olympic"
     }
    ]
@@ -556,7 +556,12 @@
    "confidence": "medium",
    "origin": "鏡週刊（2022-09-27）",
    "origin_url": "https://www.mirrormedia.mg/story/20220927inv005",
-   "related": []
+   "related": [
+    {
+     "theme": "international",
+     "item": "intl-trendy-taipei"
+    }
+   ]
   },
   {
    "id": "p22-media-07",

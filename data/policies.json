@@ -1201,7 +1201,7 @@
       "id": "culture",
       "name": "文化運動",
       "color": "#c9a227",
-      "summary": "大巨蛋與國際賽事、文化場館與城市外交。",
+      "summary": "大巨蛋與文化場館。國際賽事、展會與城市外交見「國際交流」島。",
       "items": [
         {
           "id": "culture-dome",
@@ -1232,47 +1232,138 @@
           ]
         },
         {
-          "id": "culture-olympic",
-          "title": "2027 世界 12 強與 LA 奧運最終資格賽在臺北",
-          "status": "in_progress",
-          "date": "2026-08-17",
+          "id": "culture-museums",
+          "title": "北美館、當代館、寶藏巖串聯構想",
+          "status": "proposal",
+          "date": "2025-09-03",
           "facts": [
-            "2026-08-17 棒協與 WBSC 簽協辦協議",
-            "取得 12 強預賽、複賽及奧運資格賽主辦",
-            "具體賽程日期尚未公布"
+            "文化局長稱擬串聯三館，朝「國際藝術村」願景",
+            "北美館園區擴建計畫為新館長一大挑戰"
           ],
           "sources": [
             {
-              "url": "https://news.pts.org.tw/article/822826",
-              "publisher": "公視新聞網",
-              "published": "2026-08-17"
+              "url": "https://money.udn.com/money/story/7307/8981686",
+              "publisher": "中央社（經濟日報）",
+              "published": "2025-09-03"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "international",
+      "name": "國際交流",
+      "color": "#3d5a80",
+      "summary": "姊妹市與城市外交、國際會展、國際賽事、大巨蛋國際演唱會與外商投資。",
+      "items": [
+        {
+          "id": "intl-sister-cities",
+          "title": "姊妹市與友誼市",
+          "status": "done",
+          "date": "2025-11-13",
+          "facts": [
+            "臺北市至今與 39 國 53 個城市締結姊妹市（市府秘書處資料，2026-10 檢視）",
+            "任內新增姊妹市 2 個：聖文森金石城（2024-05-21）、聖克里斯多福巴士底市（2025-11-13）",
+            "另新增友誼市 2 個：日本松山市（2024-10-11，僅市府頁面記載）、美國蒙哥馬利郡（2025-03-19）"
+          ],
+          "sources": [
+            {
+              "url": "https://sec.gov.taipei/News_Content.aspx?n=6DB01D28DCD9FC33&sms=48505C64570D47D6&s=859D438228425B4A",
+              "publisher": "臺北市政府秘書處",
+              "published": "2025-11-14",
+              "title": "拉丁美洲及加勒比海地區各姊妹市"
             },
             {
-              "url": "https://udn.com/news/story/7001/9696673",
-              "publisher": "聯合報",
-              "published": "2026-08-17"
+              "url": "https://www.cna.com.tw/news/aipl/202511140112.aspx",
+              "publisher": "中央社",
+              "published": "2025-11-14",
+              "title": "巴士底市與臺北市締結姊妹市"
+            },
+            {
+              "url": "https://skncgtoronto.gov.kn/?p=14242",
+              "publisher": "聖克里斯多福及尼維斯駐多倫多總領事館",
+              "published": "2025-11-19",
+              "title": "Formal Ties with Two Major Cities in Taiwan will be Beneficial, says Ambassador Francis"
+            },
+            {
+              "url": "https://newtalk.tw/news/view/2024-06-25/925328",
+              "publisher": "新頭殼",
+              "published": "2024-06-25",
+              "title": "高雄與巴士底市締結姊妹市"
             }
           ]
         },
         {
-          "id": "culture-masters",
-          "title": "2025 雙北世界壯年運動會",
+          "id": "culture-diplomacy",
+          "title": "城市外交：合作備忘錄與國際論壇",
           "status": "done",
-          "date": "2025-05-17",
+          "date": "2026-04-28",
           "facts": [
-            "2025-05-17 至 30 舉行，亞洲首次舉辦",
-            "超過 2.5 萬名選手、107 國參賽"
+            "2025-06 出席巴黎「巴黎協定」10 週年市長峰會並發言；出訪未簽署文件",
+            "2026-03-19 舉辦台北國際城市論壇（第 2 屆），與德國德勒斯登市長簽署交流合作備忘錄（MOU，非姊妹市）",
+            "2026-04-28 資訊局與東京都數位服務局簽署數位合作 MOU（局處層級）"
           ],
           "sources": [
             {
-              "url": "https://www.nownews.com/news/6672363",
-              "publisher": "NOWnews",
-              "published": "2025-04-17"
+              "url": "https://www.cna.com.tw/news/aloc/202603190132.aspx",
+              "publisher": "中央社",
+              "published": "2026-03-19",
+              "title": "台北德勒斯登簽MOU（中央社 2026-03-19）"
             },
             {
-              "url": "https://www.cna.com.tw/news/aspt/202505300218.aspx",
-              "publisher": "中央社",
-              "published": "2025-05-30"
+              "url": "https://udn.com/news/story/7323/9389856",
+              "publisher": "聯合報",
+              "published": "2026-03-19",
+              "title": "2026台北國際城市論壇 蔣萬安推廣台北美食"
+            },
+            {
+              "url": "https://udn.com/news/story/7323/9469620",
+              "publisher": "聯合報",
+              "published": "2026-04-28",
+              "title": "「新雙城」模式 台北、東京今簽MOU確立每年數位實體交流"
+            },
+            {
+              "url": "https://www.taiwannews.com.tw/zh/news/6140779",
+              "publisher": "台灣英文新聞（中央社稿）",
+              "published": "2025-06-24",
+              "title": "蔣萬安巴黎市長峰會分享台北經驗（中央社）"
+            }
+          ]
+        },
+        {
+          "id": "intl-twin-city-forum",
+          "title": "臺北上海雙城論壇",
+          "status": "done",
+          "date": "2025-12-28",
+          "facts": [
+            "2023-08 於上海舉行，簽署 3 項合作備忘錄（由雙方業務局處簽署）",
+            "2024-12 於臺北舉行，簽署智慧醫療、小貓熊保育 2 項備忘錄",
+            "2025-12 於上海舉行，簽署水治理、職業技能培訓 2 項備忘錄"
+          ],
+          "sources": [
+            {
+              "url": "https://www.nownews.com/news/6244687",
+              "publisher": "NOWnews今日新聞",
+              "published": "2023-08-30",
+              "title": "雙城論壇開幕 蔣萬安致詞"
+            },
+            {
+              "url": "https://www.1111.com.tw/news/jobns/152817",
+              "publisher": "1111人力銀行產經新聞網（綜合報導）",
+              "published": "2023-08-18",
+              "title": "蔣萬安將赴上海參與2023雙城論壇 聚焦科技簽3項MOU"
+            },
+            {
+              "url": "https://news.pts.org.tw/article/729184",
+              "publisher": "公視新聞網",
+              "published": "2024-12-17",
+              "title": "2024雙城論壇開幕"
+            },
+            {
+              "url": "https://n.yam.com/Article/20251228524734",
+              "publisher": "墨新聞（蕃新聞轉載）",
+              "published": "2025-12-28",
+              "title": "蔣萬安赴上海臺北城市論壇 簽署交流合作備忘錄"
             }
           ]
         },
@@ -1299,58 +1390,272 @@
           ]
         },
         {
-          "id": "culture-museums",
-          "title": "北美館、當代館、寶藏巖串聯構想",
-          "status": "proposal",
-          "date": "2025-09-03",
-          "facts": [
-            "文化局長稱擬串聯三館，朝「國際藝術村」願景",
-            "北美館園區擴建計畫為新館長一大挑戰"
-          ],
-          "sources": [
-            {
-              "url": "https://money.udn.com/money/story/7307/8981686",
-              "publisher": "中央社（經濟日報）",
-              "published": "2025-09-03"
-            }
-          ]
-        },
-        {
-          "id": "culture-diplomacy",
-          "title": "城市外交",
-          "status": "done",
-          "date": "2026-03-19",
-          "facts": [
-            "2025-06-23 出席巴黎市長峰會",
-            "2026-03-19 辦台北國際城市論壇，與德勒斯登簽 MOU"
-          ],
-          "sources": [
-            {
-              "url": "https://n.yam.com/Article/20250624827629",
-              "publisher": "墨新聞",
-              "published": "2025-06-24"
-            },
-            {
-              "url": "https://udn.com/news/story/7323/9389856",
-              "publisher": "聯合報",
-              "published": "2026-03-19"
-            }
-          ]
-        },
-        {
           "id": "culture-its",
           "title": "2029 ITS 智慧運輸世界大會主辦權",
           "status": "in_progress",
           "date": "2024-09-15",
           "facts": [
-            "2024-09-15 於杜拜決選，臺北取得主辦權",
-            "預計 2029 年 9 月於臺北舉行"
+            "2024-09-15 於杜拜決選，由中華智慧運輸協會與臺北市政府共同申辦取得主辦權",
+            "協會理事長稱申辦歷時 2014–2024 年、前後 4 次（跨越多任市府）",
+            "預定 2029 年 9 月於臺北舉行"
           ],
           "sources": [
             {
+              "url": "https://www.taiwannews.com.tw/zh/news/5936907",
+              "publisher": "台灣英文新聞",
+              "published": "2024-09-16",
+              "title": "台灣取得2029年智慧運輸世界大會主辦權"
+            },
+            {
+              "url": "https://udn.com/news/story/7240/9412471",
+              "publisher": "聯合新聞網",
+              "published": "2026-03-30",
+              "title": "遠傳助力智慧運輸產業 迎接2029智慧運輸世界大會"
+            },
+            {
               "url": "https://www.ctee.com.tw/news/20240917700373-430201",
               "publisher": "工商時報",
-              "published": "2024-09-17"
+              "published": "2024-09-17",
+              "title": null
+            }
+          ]
+        },
+        {
+          "id": "intl-trendy-taipei",
+          "title": "潮台北 TRENDY TAIPEI",
+          "status": "done",
+          "date": "2025-09",
+          "facts": [
+            "2024-09 首屆示範，市府文化、產業、資訊、觀傳 4 局合辦，以北流為主場地，含 12 國 25 位國際音樂策展人與買家",
+            "2025-08-27 至 09-07 第 2 屆，於台北 101 舉辦國際論壇，約 30 位國內外講者"
+          ],
+          "sources": [
+            {
+              "url": "https://www.cna.com.tw/postwrite/chi/376672",
+              "publisher": "中央社訊息平台",
+              "published": "2024-07-18",
+              "title": "2024 TRENDY TAIPEI潮臺北起跑記者會（訊息來源：臺北市政府文化局）"
+            },
+            {
+              "url": "https://www.cna.com.tw/postwrite/chi/382840",
+              "publisher": "中央社訊息平台",
+              "published": "2024-09-30",
+              "title": "2024潮臺北TRENDY TAIPEI（訊息來源：臺北市政府文化局）"
+            },
+            {
+              "url": "https://www.taiwannews.com.tw/zh/news/6188031",
+              "publisher": "台灣英文新聞",
+              "published": "2025-08-27",
+              "title": "潮台北 TRENDY TAIPEI 登場"
+            }
+          ]
+        },
+        {
+          "id": "intl-smart-city",
+          "title": "智慧城市展（市府共同主辦）",
+          "status": "done",
+          "date": "2025-03",
+          "facts": [
+            "2025-03-18 至 21 於南港展覽館舉行，主辦為台北市電腦公會等 4 單位，臺北市為共同主辦並辦國際高峰論壇",
+            "主辦方稱涵蓋 59 個國家或地區、138 個城市、86 位城市首長"
+          ],
+          "sources": [
+            {
+              "url": "https://n.yam.com/Article/20250319307608",
+              "publisher": "蕃新聞（轉載）",
+              "published": "2025-03-19",
+              "title": "2025智慧城市展暨淨零城市展 攜手全球城市推動數位與綠色雙軸轉型"
+            }
+          ]
+        },
+        {
+          "id": "intl-baseball",
+          "title": "大巨蛋與天母的國際棒球賽事",
+          "status": "done",
+          "date": "2025-02",
+          "facts": [
+            "2023-08 U18 世界盃青棒賽（天母等 3 球場）；2023-12-03 亞洲棒球錦標賽為大巨蛋首場正式比賽",
+            "2024-11 世界棒球 12 強賽 B 組預賽於大巨蛋與天母舉行，中華隊於該屆奪冠",
+            "2025-02 世界棒球經典賽資格賽於大巨蛋舉行，中華隊取得正賽資格；各賽事主辦權多由中華棒協取得"
+          ],
+          "sources": [
+            {
+              "url": "https://www.cna.com.tw/news/aspt/202312010216.aspx",
+              "publisher": "中央社",
+              "published": "2023-12-01",
+              "title": "亞錦賽3日登場 中華電轉播首推巨蛋視角鳥瞰全場"
+            },
+            {
+              "url": "https://www.bnext.com.tw/article/77685/2023-asian-baseball-championship",
+              "publisher": "數位時代",
+              "published": "2023-12-05",
+              "title": "2023亞洲棒球錦標賽賽程"
+            },
+            {
+              "url": "https://www.cna.com.tw/news/aspt/202410025005.aspx",
+              "publisher": "中央社",
+              "published": "2024-10-02",
+              "title": "世界棒球12強賽程 中華隊11/13首戰韓國"
+            },
+            {
+              "url": "https://www.gvm.com.tw/article/117027",
+              "publisher": "遠見雜誌",
+              "published": "2024-11-16",
+              "title": "2024世界棒球12強賽 B組賽事資訊"
+            }
+          ]
+        },
+        {
+          "id": "culture-masters",
+          "title": "2025 雙北世界壯年運動會",
+          "status": "done",
+          "date": "2025-05-17",
+          "facts": [
+            "主辦權於 2020-10-22（柯文哲市長任內）由雙北聯名取得",
+            "2025-05-17 至 30 舉行，亞洲首次舉辦；開幕典禮在大巨蛋",
+            "報導指 107 國、35 種運動，報名 2 萬 5,746 人"
+          ],
+          "sources": [
+            {
+              "url": "https://news.pts.org.tw/article/497939",
+              "publisher": "公視新聞網",
+              "published": "2020-10-22",
+              "title": "2025世界壯年運動會 雙北將首度聯名主辦"
+            },
+            {
+              "url": "https://www.nownews.com/news/6672363",
+              "publisher": "NOWnews今日新聞",
+              "published": "2025-04-17",
+              "title": "世壯運5月17日台北大巨蛋開幕"
+            },
+            {
+              "url": "https://www.nownews.com/news/6683802",
+              "publisher": "NOWnews今日新聞",
+              "published": "2025-05-16",
+              "title": "世壯運明天開幕 2萬5746選手及隊職員報名"
+            }
+          ]
+        },
+        {
+          "id": "intl-marathon",
+          "title": "臺北馬拉松晉升世界田徑金標籤",
+          "status": "done",
+          "date": "2024-12-15",
+          "facts": [
+            "2024 臺北馬拉松晉升世界田徑總會（WA）金標籤賽事",
+            "2024-12-15 約 2 萬 8,000 名跑者參賽，其中國際跑者 4,380 位，為歷年最多"
+          ],
+          "sources": [
+            {
+              "url": "https://www.nownews.com/news/6610809",
+              "publisher": "NOWnews今日新聞",
+              "published": "2024-12-14",
+              "title": "2024臺北馬拉松周日開跑 晉升金標籤賽事"
+            },
+            {
+              "url": "https://n.yam.com/Article/20240716523665",
+              "publisher": "創新聞（蕃新聞轉載）",
+              "published": "2024-07-17",
+              "title": "金標籤賽事全臺唯一市區路線 臺北馬拉松報名正式啟動"
+            }
+          ]
+        },
+        {
+          "id": "culture-olympic",
+          "title": "2027 世界 12 強與 LA 奧運最終資格賽在臺北",
+          "status": "in_progress",
+          "date": "2026-08-17",
+          "facts": [
+            "中華棒協 2026-08-14 宣布取得 2027 世界 12 強預賽、複賽與 2028 洛杉磯奧運最終資格賽主辦權，均在臺北舉行",
+            "主辦權由中華棒協取得，市府稱提供行政協助",
+            "賽程與場館尚待公布"
+          ],
+          "sources": [
+            {
+              "url": "https://news.pts.org.tw/article/822493",
+              "publisher": "公視新聞網",
+              "published": "2026-08-14",
+              "title": "台灣取得2027年12強及2028奧運最終資格賽主辦權"
+            },
+            {
+              "url": "https://news.pts.org.tw/article/822826",
+              "publisher": "公視新聞網",
+              "published": "2026-08-17",
+              "title": null
+            },
+            {
+              "url": "https://udn.com/news/story/7001/9696673",
+              "publisher": "聯合報",
+              "published": "2026-08-17",
+              "title": null
+            }
+          ]
+        },
+        {
+          "id": "intl-dome-concerts",
+          "title": "大巨蛋開放國際藝人演唱會",
+          "status": "done",
+          "date": "2026-10",
+          "facts": [
+            "2024 年內政部表示由市府依權責決定後，市府要求遠雄完成防火避難驗證，開放大巨蛋辦演唱會；市長稱仍以運動賽事為主，演唱會屬臨時性使用",
+            "2025-03 起依報導已宣布或舉辦的國際（非台灣）藝人場次包括：太妍、安德烈・波伽利、林俊傑、G-DRAGON、SUPER JUNIOR、TXT、i-dle、TWICE、ONE OK ROCK、aespa、BIGBANG",
+            "2026-01-10 韓國金唱片獎首次移師台灣在大巨蛋舉行；演唱會與頒獎典禮均為民間主辦"
+          ],
+          "sources": [
+            {
+              "url": "https://www.cna.com.tw/news/aloc/202406270175.aspx",
+              "publisher": "中央社",
+              "published": "2024-06-27",
+              "title": "大巨蛋辦演唱會 蔣萬安：依議會決議函詢內政部"
+            },
+            {
+              "url": "https://news.pts.org.tw/article/707667",
+              "publisher": "公視新聞網",
+              "published": "2024-07-31",
+              "title": "蔣萬安：8月消安審查通過 大巨蛋即可辦國慶晚會"
+            },
+            {
+              "url": "https://www.cna.com.tw/news/aloc/202411010101.aspx",
+              "publisher": "中央社",
+              "published": "2024-11-01",
+              "title": "大巨蛋114年中職檔期腰斬剩20場 蔣萬安：須以運動賽事為主"
+            },
+            {
+              "url": "https://www.businesstoday.com.tw/article/category/183030/post/202603160026/",
+              "publisher": "今周刊",
+              "published": "2026-03-20",
+              "title": "TWICE台北應援地圖！9大打卡點、快閃店、主題車廂、台北塔點燈"
+            }
+          ]
+        },
+        {
+          "id": "intl-investment",
+          "title": "國際企業投資：輝達北士科總部",
+          "status": "done",
+          "date": "2026-02-11",
+          "facts": [
+            "2025-05-19 輝達宣布台灣總部落址北士科；2026-02-11 市府與輝達簽地上權契約（50 年可延 20 年），輝達稱投資逾 400 億元",
+            "選址與投資規模由輝達決定，市府角色為地上權與行政程序",
+            "任內查得可證實落腳臺北市的大型外商投資以此案為主；其他外商據點多不在臺北市或查無所在城市資料"
+          ],
+          "sources": [
+            {
+              "url": "https://newtalk.tw/news/view/2025-05-19/971754",
+              "publisher": "新頭殼",
+              "published": "2025-05-19",
+              "title": "黃仁勳宣布輝達台灣總部落腳北士科"
+            },
+            {
+              "url": "https://technews.tw/?p=1457451",
+              "publisher": "科技新報",
+              "published": "2025-10-22",
+              "title": "新光人壽宣布北士科T17、T18地上權與北市府合意解約"
+            },
+            {
+              "url": "https://www.mirrormedia.mg/story/20260211edi035",
+              "publisher": "鏡週刊",
+              "published": "2026-02-11",
+              "title": "蔣萬安宣布與輝達完成北士科地上權簽約"
             }
           ]
         }
