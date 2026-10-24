@@ -55,7 +55,7 @@ function rng(seed) {
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson }) {
+export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge }) {
   const isSmall = window.matchMedia('(max-width: 760px)').matches;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -626,7 +626,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     list.forEach((b, i) => { b.userData.orbMesh = im; b.userData.orbIndex = i; });
   });
   // ---------- 小人：常駐在各島，符合島的主題 ----------
-  const crowd = createCrowd(scene, 96);
+  const crowd = createCrowd(scene, 300); // 常駐約 210 人＋政策小場景的演員
   const ring = (cx, cz, r, n = 10) => Array.from({ length: n }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * r, cz + Math.sin((i / n) * Math.PI * 2) * r]);
   const RESIDENTS = {
     transport: [
@@ -679,6 +679,20 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       ...o, y: TOP + (o.y || 0),
       meta: items.length ? { themeId: id, itemId: items[k % items.length].id } : null,
     }));
+    // 沿島緣散步的市民：所有人共用同一組 InstancedMesh，加人不增加繪製次數
+    const rim = (r, rev) => {
+      const pts = Array.from({ length: 6 }, (_, j) => { const a = Math.PI / 2 + (j / 6) * Math.PI * 2; return [Math.cos(a) * r, Math.sin(a) * r]; });
+      return rev ? pts.reverse() : pts;
+    };
+    const rnd = rng(500 + id.length * 31);
+    for (let k = 0; k < 16; k++) {
+      const kind = rnd();
+      crowd.add(isle.root, {
+        y: TOP, anim: kind < 0.22 ? 'jog' : 'walk', path: rim(3.5 + (k % 2) * 0.18, k % 3 === 0),
+        pathT: k / 16 + rnd() * 0.03, speed: 0.75 + rnd() * 0.5, kid: kind > 0.86, senior: kind > 0.7 && kind <= 0.86,
+        meta: items.length ? { themeId: id, itemId: items[(k + 3) % items.length].id } : null,
+      });
+    }
   });
 
   // ---------- 政策小場景：浮在島上方的小舞台 ----------
@@ -900,6 +914,22 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       treeSpots.push(new THREE.Vector3(Math.cos(a) * r, TOP, Math.sin(a) * r));
     }
     mergeStatic(group);
+    // 中央廣場：繞著臺北 101 散步、在廣場上停留的人
+    {
+      const all = themes.flatMap((t) => t.items.map((it) => ({ themeId: t.id, itemId: it.id })));
+      const rnd = rng(77);
+      const loop = (r, rev) => { const pts = Array.from({ length: 12 }, (_, j) => { const a = (j / 12) * Math.PI * 2; return [Math.cos(a) * r, Math.sin(a) * r]; }); return rev ? pts.reverse() : pts; };
+      for (let k = 0; k < 26; k++) {
+        crowd.add(c, { anim: rnd() < 0.2 ? 'jog' : 'walk', path: loop(1.75 + (k % 3) * 0.32, k % 2 === 0), pathT: k / 26, speed: 0.7 + rnd() * 0.5,
+          kid: rnd() > 0.85, senior: rnd() > 0.85, meta: all[(k * 7) % all.length] });
+      }
+      const poses = ['wave', 'point', 'clap', 'idle', 'cheer'];
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2 + 0.2;
+        crowd.add(c, { x: Math.cos(a) * 2.55, z: Math.sin(a) * 2.55, rot: Math.atan2(-Math.cos(a), -Math.sin(a)), anim: poses[k % poses.length],
+          kid: k % 4 === 0, meta: all[(k * 11 + 3) % all.length] });
+      }
+    }
     const el = document.createElement('div');
     el.className = 'center-label';
     el.innerHTML = '<b>臺北</b><span>2022–2026</span>';
@@ -1114,6 +1144,98 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   }
   buildTrees(treeSpots);
 
+  // ---------- 2022 政見圖層：切換後，島緣的光柱改成代表各條政見的「承諾牌」 ----------
+  const pledge = { on: false, list: [], poles: null, meshes: [], hits: [] };
+  const pledgeGeo = new THREE.BoxGeometry(0.5, 0.62, 0.08);
+  function setPledges(list, colors) {
+    // list: [{ id, themeId, status }]；colors: { status: '#hex' }
+    if (pledge.poles) return;
+    const byIsle = new Map();
+    list.forEach((p) => { if (islands.has(p.themeId)) (byIsle.get(p.themeId) || byIsle.set(p.themeId, []).get(p.themeId)).push(p); });
+    byIsle.forEach((arr, themeId) => {
+      const isle = islands.get(themeId);
+      arr.forEach((p, k) => {
+        // 超過 14 條時分內外兩圈，避免擠在一起
+        const ringK = arr.length > 14 ? k % 2 : 0;
+        const per = arr.length > 14 ? Math.ceil(arr.length / 2) : arr.length;
+        const idx = arr.length > 14 ? Math.floor(k / 2) : k;
+        const a = (idx / per) * Math.PI * 2 + 0.15 + ringK * (Math.PI / per);
+        const r = ringK ? 2.35 : 2.95;
+        const b = new THREE.Object3D();
+        b.position.set(Math.cos(a) * r, TOP, Math.sin(a) * r);
+        const pole = new THREE.Object3D(); pole.position.y = 0.65;
+        const tok = new THREE.Object3D(); tok.position.y = 1.55 + ringK * 0.35; tok.userData.y0 = tok.position.y;
+        const hit = new THREE.Mesh(hitGeo, hitMat);
+        hit.position.y = 1.4 + ringK * 0.35;
+        hit.userData = { themeId, pledgeId: p.id };
+        b.add(pole, tok, hit);
+        b.userData = { p, pole, tok, phase: k * 0.7 };
+        isle.root.add(b);
+        pledge.list.push(b);
+        pledge.hits.push(hit);
+      });
+      isle.pledgeCount = arr.length;
+    });
+    pledge.poles = new THREE.InstancedMesh(poleMesh.geometry, M.concrete, pledge.list.length);
+    pledge.poles.frustumCulled = false;
+    pledge.poles.visible = false;
+    scene.add(pledge.poles);
+    pledge.list.forEach((b, i) => { b.userData.poleIndex = i; });
+    Object.entries(colors).forEach(([status, color]) => {
+      const sel = pledge.list.filter((b) => b.userData.p.status === status);
+      if (!sel.length) return;
+      const m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, roughness: 0.45 });
+      m.userData.base = 0.5;
+      glowMats.push(m);
+      const im = new THREE.InstancedMesh(pledgeGeo, m, sel.length);
+      im.frustumCulled = false;
+      im.castShadow = true;
+      im.visible = false;
+      scene.add(im);
+      pledge.meshes.push(im);
+      sel.forEach((b, i) => { b.userData.mesh = im; b.userData.index = i; });
+    });
+    if (pledge.on) setPledgeMode(true);
+  }
+  function setPledgeMode(on) {
+    pledge.on = !!on;
+    poleMesh.visible = !pledge.on;
+    orbMeshes.forEach((m) => { m.visible = !pledge.on; });
+    if (pledge.poles) {
+      pledge.poles.visible = pledge.on;
+      pledge.meshes.forEach((m) => { m.visible = pledge.on; });
+      pledge.hits.forEach((h) => {
+        const i = pickables.indexOf(h);
+        if (pledge.on && i < 0) pickables.push(h);
+        if (!pledge.on && i >= 0) pickables.splice(i, 1);
+      });
+    }
+    islands.forEach((isle) => {
+      const small = isle.label.querySelector('small');
+      isle.label.classList.toggle('is-pledge', pledge.on);
+      if (pledge.on) { isle.label.classList.remove('is-dim'); if (small) small.textContent = String(isle.pledgeCount || 0); }
+    });
+    if (!pledge.on) applyBeaconFilters();
+  }
+  function syncPledges(elapsed) {
+    if (!pledge.on || !pledge.poles) return;
+    // 鏡頭拉遠時把承諾牌放大，鳥瞰也看得出顏色
+    const far = THREE.MathUtils.clamp(camera.position.distanceTo(controls.target) / 40, 1, 2.2);
+    for (const b of pledge.list) {
+      const { tok, pole, phase, mesh, index, poleIndex, p } = b.userData;
+      tok.position.y = tok.userData.y0 + Math.sin(elapsed * 1.8 + phase) * 0.08;
+      tok.rotation.y = elapsed * 0.9 + phase;
+      const s = (hovered?.pledgeId === p.id ? 1.45 : 1) * far;
+      tok.scale.setScalar(THREE.MathUtils.lerp(tok.scale.x, s, 0.2));
+      tok.updateMatrixWorld();
+      pole.updateMatrixWorld();
+      pledge.poles.setMatrixAt(poleIndex, pole.matrixWorld);
+      mesh.setMatrixAt(index, tok.matrixWorld);
+    }
+    pledge.poles.instanceMatrix.needsUpdate = true;
+    pledge.meshes.forEach((m) => { m.instanceMatrix.needsUpdate = true; });
+  }
+
   // ---------- 互動 ----------
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -1128,6 +1250,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const hit = raycaster.intersectObjects(pickables, false)[0];
     if (!hit) return null;
     const d = hit.object.userData;
+    if (d.pledgeId) return { themeId: d.themeId, pledgeId: d.pledgeId };
+    if (d.itemId && pledge.on) return { themeId: d.themeId };
     if (d.itemId) {
       const beacon = hit.object.parent;
       if (!beacon.userData.shown) return { themeId: d.themeId };
@@ -1145,6 +1269,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     }
     renderer.domElement.style.cursor = h ? 'pointer' : '';
     onHoverItem?.(h?.itemId ? h : null, clientX, clientY);
+    onHoverPledge?.(h?.pledgeId ? h : null, clientX, clientY);
   }
 
   const el = renderer.domElement;
@@ -1158,9 +1283,9 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   };
   el.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
-    const person = personAt(e.clientX, e.clientY, false);
-    if (person) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
-    setHover(pick(e.clientX, e.clientY), e.clientX, e.clientY);
+    const h = pick(e.clientX, e.clientY);
+    if (!h?.itemId && !h?.pledgeId && personAt(e.clientX, e.clientY, false)) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
+    setHover(h, e.clientX, e.clientY);
   });
   el.addEventListener('pointerleave', () => setHover(null));
   el.addEventListener('pointerup', (e) => {
@@ -1168,12 +1293,16 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
     down = null;
     if (moved > 7) return;
-    const person = personAt(e.clientX, e.clientY, e.pointerType === 'touch');
-    if (person && onSelectPerson) { onSelectPerson(person.meta, person); return; }
-    if (bubble) { hideBubble(); onBubbleGone?.(); } // 點別處就收起泡泡
+    // 直接點中光柱或承諾牌時優先；否則才看附近有沒有居民
     const h = pick(e.clientX, e.clientY);
+    if (!h?.itemId && !h?.pledgeId) {
+      const person = personAt(e.clientX, e.clientY, e.pointerType === 'touch');
+      if (person && onSelectPerson) { onSelectPerson(person.meta, person); return; }
+    }
+    if (bubble) { hideBubble(); onBubbleGone?.(); } // 點別處就收起泡泡
     if (!h) return;
-    if (h.itemId) onSelectItem(h.themeId, h.itemId);
+    if (h.pledgeId) onSelectPledge?.(h.pledgeId);
+    else if (h.itemId) onSelectItem(h.themeId, h.itemId);
     else onSelectTheme(h.themeId);
   });
 
@@ -1283,6 +1412,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         if (ok) shown++;
       });
       const filtering = !!statusFilter || timeCut !== null;
+      if (pledge.on) return;
       isle.label.classList.toggle('is-dim', filtering && shown === 0);
       const small = isle.label.querySelector('small');
       if (small) small.textContent = filtering ? `${shown}/${isle.beacons.length}` : String(isle.beacons.length);
@@ -1472,6 +1602,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     crowd.update(elapsed);
     updateBubble();
     syncBeacons();
+    syncPledges(elapsed);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -1506,10 +1637,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         v.copy(p.head).project(camera);
         people.push({ ...p.meta, x: Math.round((v.x + 1) / 2 * container.clientWidth), y: Math.round((1 - v.y) / 2 * container.clientHeight) });
       });
+      const pledgePts = pledge.on ? pledge.list.map((b) => { v.setFromMatrixPosition(b.userData.tok.matrixWorld).project(camera); return { id: b.userData.p.id, x: Math.round((v.x + 1) / 2 * container.clientWidth), y: Math.round((1 - v.y) / 2 * container.clientHeight) }; }) : [];
       let meshes = 0;
       scene.traverse((o) => { if (o.isMesh) meshes++; });
       return {
-        people, cam: camera.position.toArray().map((v) => +v.toFixed(2)), target: controls.target.toArray().map((v) => +v.toFixed(2)), inset: [inset.x, inset.tx], focused, view: camera.view, out,
+        people, pledges: pledgePts, peopleCount: crowd.count?.() ?? people.length, cam: camera.position.toArray().map((v) => +v.toFixed(2)), target: controls.target.toArray().map((v) => +v.toFixed(2)), inset: [inset.x, inset.tx], focused, view: camera.view, out,
         info: { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, meshes, pixelRatio: renderer.getPixelRatio(), shadows: renderer.shadowMap.enabled },
       };
     };
@@ -1525,5 +1657,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     focusTheme, resetView, setStatusFilter, setTimeCut, refreshLayout: setInset,
     showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
+    setPledges, setPledgeMode, getPledgeMode: () => pledge.on,
   };
 }

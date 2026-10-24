@@ -6,7 +6,7 @@ const STATUS = {
   pledge: { label: '連任政見', color: '#d0457a' },
 };
 const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
-import { loadPledges, renderPledges, focusPledge } from './pledges.js';
+import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, countByStatus } from './pledges.js';
 import { createTour } from './tour.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
@@ -225,7 +225,7 @@ async function boot() {
   });
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { if (bubbleOpen) { closeBubble(); return; } closePanel(); }
+    if (e.key === 'Escape') { if (!$('#pledge-pop').hidden) { $('#pledge-pop').hidden = true; return; } if (bubbleOpen) { closeBubble(); return; } closePanel(); }
     if (!currentTheme || view !== 'island') return;
     const idx = themes.findIndex((t) => t.id === currentTheme);
     if (e.key === 'ArrowRight') openTheme(themes[(idx + 1) % themes.length].id);
@@ -551,6 +551,8 @@ async function boot() {
       onSelectItem: (id, itemId) => openTheme(id, itemId),
       onHoverItem,
       onSelectPerson: (meta, person) => showPersonBubble(meta, person),
+      onSelectPledge: (id) => showPledgePop(id),
+      onHoverPledge,
     });
     world.onBubbleGone(() => { bubbleOpen = false; });
   } catch (err) {
@@ -570,11 +572,77 @@ async function boot() {
 
   applyTime();
 
+  // ---------- 2022 承諾圖層：島緣光柱改成各條政見，顏色＝兌現狀態 ----------
+  // 政見對應到哪座島：有關聯施政項目就放在那座島，否則依政策領域
+  const CAT_THEME = { 市政: 'development', 居住: 'housing', 交通: 'transport', 育兒: 'family', 長照: 'care', 勞工: 'safety',
+    動物保護: 'environment', 青年: 'industry', 教育: 'family', 文化: 'culture', 市民生活: 'culture', 經濟: 'industry', 產業: 'industry', 性別: 'safety' };
+  const pledgeTheme = (p) => p.related?.[0]?.theme || CAT_THEME[p.category] || 'development';
+  let pledgeData = null;
+  const pop = $('#pledge-pop');
+  function onHoverPledge(h, x, y) {
+    const p = h && pledgeData?.items.find((q) => q.id === h.pledgeId);
+    if (!p) { tip.hidden = true; return; }
+    tip.innerHTML = `<b>${esc(p.pledge.length > 46 ? p.pledge.slice(0, 45) + '…' : p.pledge)}</b><span>2022 承諾・${PLEDGE_STATUS[p.status].label}</span>`;
+    tip.style.left = `${x}px`;
+    tip.style.top = `${y}px`;
+    tip.hidden = false;
+  }
+  function showPledgePop(id) {
+    const p = pledgeData?.items.find((q) => q.id === id);
+    if (!p) return;
+    tip.hidden = true;
+    const st = PLEDGE_STATUS[p.status];
+    pop.innerHTML = `<button class="pop-close" aria-label="關閉">×</button>
+      <p class="pop-kicker"><span class="badge" style="background:${st.color}">${st.label}</span>2022 承諾・${esc(p.category)}</p>
+      <p class="pop-quote">${esc(p.pledge.length > 90 ? p.pledge.slice(0, 89) + '…' : p.pledge)}</p>
+      <p class="pop-sum">${esc(p.summary)}</p>
+      <div class="pop-actions"><button class="cta" data-pop="open">看完整查證與來源 →</button><button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button></div>`;
+    pop.hidden = false;
+    pop.dataset.id = id;
+  }
+  pop.addEventListener('click', (e) => {
+    if (e.target.closest('.pop-close')) { pop.hidden = true; return; }
+    if (e.target.closest('[data-pop="open"]')) {
+      const id = pop.dataset.id;
+      pop.hidden = true;
+      setView('pledges');
+      ensurePledges().then(() => focusPledge(pledgesRoot, id));
+      history.replaceState(null, '', `#/pledges/${id}`);
+    }
+  });
+  const layerBox = $('#layer');
+  function setLayer(mode) {
+    const on = mode === 'pledges';
+    layerBox.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.layer === mode)));
+    document.body.classList.toggle('pledge-mode', on);
+    $('#layer-legend').hidden = !on;
+    if (on) { stopPlay(); resetTimeline(); hideHero(); } else pop.hidden = true;
+    world?.setPledgeMode(on);
+    setTimeout(() => world?.refreshLayout(), 30);
+  }
+  layerBox.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-layer]');
+    if (b) setLayer(b.dataset.layer);
+  });
+  if (world) {
+    loadPledges().then((pd) => {
+      pledgeData = pd;
+      world.setPledges(pd.items.map((p) => ({ id: p.id, themeId: pledgeTheme(p), status: p.status })),
+        Object.fromEntries(PLEDGE_ORDER.map((s) => [s, PLEDGE_STATUS[s].color])));
+      const c = countByStatus(pd.items);
+      $('#layer-legend').innerHTML = PLEDGE_ORDER.filter((s) => c[s]).map((s) => `<span><i style="background:${PLEDGE_STATUS[s].color}"></i>${PLEDGE_STATUS[s].label} ${c[s]}</span>`).join('')
+        + '<small>點承諾牌看查證摘要</small>';
+    }).catch(() => { layerBox.hidden = true; });
+  } else {
+    layerBox.hidden = true;
+  }
+
   // ---------- 自動導覽 ----------
   if (world) {
     tour = createTour({
       world, themes, byId, loadPledges,
       onStart: () => {
+        if (document.body.classList.contains('pledge-mode')) setLayer('items');
         stopPlay();
         closeBubble();
         if (view !== 'island') setView('island');
