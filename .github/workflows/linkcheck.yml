@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.56 尚未支援 ubuntu-latest（26.04）
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
