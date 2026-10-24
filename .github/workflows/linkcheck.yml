@@ -1,0 +1,33 @@
+name: Check source links
+
+on:
+  schedule:
+    - cron: '17 1 * * 1' # 每週一 09:17（台北時間）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check links
+        id: check
+        env:
+          REPORT_FILE: report.md
+        run: node scripts/check-links.mjs
+        continue-on-error: true
+      # 有失效連結時開一則 issue（已開過就附加留言）
+      - name: Open or update issue
+        if: steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh issue list --state open --search "來源連結檢查 in:title" --json number -q '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --body-file report.md; else gh issue create --title "來源連結檢查：有失效連結" --body-file report.md; fi

@@ -8,7 +8,8 @@
     "serve": "python3 -m http.server 8000",
     "check:three": "node scripts/build-three.mjs --check",
     "build:share": "node scripts/build-share.mjs dist",
-    "test": "node tests/smoke.mjs"
+    "test": "node tests/smoke.mjs",
+    "check:links": "node scripts/check-links.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",

@@ -6,7 +6,7 @@ const STATUS = {
   pledge: { label: '連任政見', color: '#d0457a' },
 };
 const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
-import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, countByStatus } from './pledges.js';
+import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, countByStatus, reportUrl } from './pledges.js';
 import { createTour } from './tour.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
@@ -41,7 +41,7 @@ function itemHTML(item, theme, { showTheme = false } = {}) {
     <h3>${esc(item.title)}</h3>
     ${facts ? `<ul>${facts}</ul>` : ''}
     ${srcs ? `<div class="sources">${srcs}</div>` : ''}
-    <div class="item-actions"><button class="share-btn" data-share="/i/${esc(item.id)}" data-title="${esc(item.title)}">分享</button></div>
+    <div class="item-actions"><a class="report-btn" href="${esc(reportUrl('施政項目', item.id, item.title, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a><button class="share-btn" data-share="/i/${esc(item.id)}" data-title="${esc(item.title)}">分享</button></div>
   </article>`;
 }
 
@@ -55,6 +55,14 @@ function toast(msg) {
   toast.timer = setTimeout(() => t.classList.remove('is-on'), 2200);
 }
 document.addEventListener('click', async (e) => {
+  const c = e.target.closest('.copy-btn');
+  if (c) {
+    e.preventDefault();
+    e.stopPropagation();
+    try { await navigator.clipboard.writeText(c.dataset.copy); toast(c.dataset.done || '已複製'); }
+    catch { window.prompt('複製這段語法：', c.dataset.copy); }
+    return;
+  }
   const b = e.target.closest('.share-btn');
   if (!b) return;
   e.preventDefault();

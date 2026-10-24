@@ -80,6 +80,16 @@ for (const [name, opts] of [
   await ctx.close();
 }
 
+// 可嵌入的單條政見卡
+{
+  const page = await browser.newPage({ viewport: { width: 520, height: 600 } });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/embed/pledge.html?id=p22-media-01`, { waitUntil: 'networkidle' });
+  check(await page.$('#card .pl .badge') !== null && errors.length === 0, `embed: 單條政見卡可顯示${errors.length ? ' ' + errors.join(' | ') : ''}`);
+  await page.close();
+}
+
 await browser.close();
 server.close();
 if (failures.length) { console.error(`\n${failures.length} 項失敗`); process.exit(1); }

@@ -15,3 +15,8 @@
 
 /og/*
   Cache-Control: public, max-age=3600
+
+# 單條政見卡開放任何網站嵌入
+/embed/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors *; base-uri 'self'

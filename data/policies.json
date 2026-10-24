@@ -931,15 +931,16 @@
           "status": "done",
           "date": "2025-01",
           "facts": [
-            "2025-01 上線，救護車即時傳送心電圖等生理資訊",
-            "醫院平均提早 6 分鐘獲得病患資訊",
+            "2025-01 上線，救護車透過 APP 將心電圖等生命數據傳送至醫院",
+            "市府稱醫院最多可提早 6 分鐘取得傷病患生理資料",
             "2025-07 加入 TFDA 認證 AI 心電圖判讀"
           ],
           "sources": [
             {
-              "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&s=F1ED92AC5E2BEA3A",
-              "publisher": "臺北市政府",
-              "published": "2025-04-29"
+              "url": "https://newtalk.tw/news/view/2025-04-29/968195",
+              "publisher": "新頭殼（中央社）",
+              "published": "2025-04-29",
+              "title": "北市急重症整合系統暨APP 單季助1198人就醫"
             },
             {
               "url": "https://udn.com/news/story/7323/9214445",

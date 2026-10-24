@@ -590,3 +590,12 @@ body.pledge-mode .timebar, body.pledge-mode .legend { display: none !important; 
   .pop-quote { font-size: 14px; }
   .pop-sum { max-height: 6.8em; font-size: 13px; }
 }
+
+/* ---------- 回報錯誤／嵌入 ---------- */
+.pl-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-btn, .report-btn { border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); border-radius: 9px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; text-decoration: none; }
+.copy-btn::before { content: "</> "; font-family: var(--font-num); }
+.report-btn::before { content: "⚑ "; }
+.copy-btn:hover, .report-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+.item-actions { gap: 6px; }
+.pl-countdown { color: var(--ink); }

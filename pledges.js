@@ -13,16 +13,33 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '#');
 const fmtDate = (d) => (d ? String(d).replace(/-/g, '.') : '');
 
+const REPO = 'https://github.com/bounce12340/chiang-wanan-policy-island';
+// 「回報錯誤」：開一則預先填好的 GitHub issue，附上項目編號與目前判定
+export function reportUrl(kind, id, title, status) {
+  const path = kind === '政見' ? `p/${id}` : `i/${id}`;
+  const body = `項目：${kind} \`${id}\`\n目前判定：${status}\n網址：${location.origin}/${path}\n\n## 哪裡有誤？\n\n\n## 正確資訊與來源連結（必填）\n\n`;
+  return `${REPO}/issues/new?title=${encodeURIComponent(`資料更正：${String(title).slice(0, 40)}`)}&body=${encodeURIComponent(body)}`;
+}
+export function embedCode(id) {
+  return `<iframe src="${location.origin}/embed/pledge.html?id=${id}" title="2022 政見兌現對照" width="100%" height="460" style="border:0;max-width:560px" loading="lazy"></iframe>`;
+}
+
 let cache = null;
 export async function loadPledges() {
   if (!cache) {
-    cache = fetch('./data/pledges2022.json', { cache: 'no-cache' }).then((r) => {
+    cache = fetch(new URL('./data/pledges2022.json', import.meta.url), { cache: 'no-cache' }).then((r) => {
       if (!r.ok) throw new Error(`pledges ${r.status}`);
       return r.json();
     });
     cache.catch(() => { cache = null; });
   }
   return cache;
+}
+
+function daysLeft(end) {
+  const ms = Date.parse(`${end}T00:00:00+08:00`) - Date.now();
+  const d = Math.ceil(ms / 86400000);
+  return d > 0 ? `・<b class="pl-countdown">距任期屆滿還有 ${d} 天</b>` : '';
 }
 
 export function countByStatus(items) {
@@ -38,7 +55,7 @@ function srcHTML(s) {
   return `<a class="src" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer" title="${esc(s.title || s.url)}">↗ ${esc(label)}</a>`;
 }
 
-function cardHTML(p, itemTitle) {
+export function cardHTML(p, itemTitle = () => null, { embed = false } = {}) {
   const st = PLEDGE_STATUS[p.status] || { label: p.status, color: '#888' };
   const ev = (p.evidence || []).map((e) => `<li>${esc(e)}</li>`).join('');
   const cr = (p.critical || []).map((e) => `<li>${esc(e)}</li>`).join('');
@@ -58,7 +75,8 @@ function cardHTML(p, itemTitle) {
     ${ev ? `<details class="pl-more"><summary>查證依據（${p.evidence.length}）</summary><ul>${ev}</ul></details>` : ''}
     ${cr ? `<details class="pl-more pl-crit"><summary>爭議與批評（${p.critical.length}）</summary><ul>${cr}</ul></details>` : ''}
     ${(p.sources || []).length ? `<div class="sources">${p.sources.map(srcHTML).join('')}</div>` : ''}
-    <div class="pl-links">${related}<button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button><a class="pl-origin" href="${esc(safeUrl(p.origin_url))}" target="_blank" rel="noopener noreferrer">政見出處：${esc(p.origin)} ↗</a></div>
+    ${embed ? '' : `<div class="pl-tools"><button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button><button class="copy-btn" data-copy="${esc(embedCode(p.id))}" data-done="已複製嵌入語法">嵌入</button><a class="report-btn" href="${esc(reportUrl('政見', p.id, p.pledge, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a></div>`}
+    <div class="pl-links">${related}<a class="pl-origin" href="${esc(safeUrl(p.origin_url))}" target="_blank" rel="noopener noreferrer">政見出處：${esc(p.origin)} ↗</a></div>
   </article>`;
 }
 
@@ -85,7 +103,7 @@ export function renderPledges(root, data, hooks) {
     <div class="pl-summary-box">
       <div class="pl-bar" role="img" aria-label="${PLEDGE_ORDER.filter((s) => counts[s]).map((s) => `${PLEDGE_STATUS[s].label} ${counts[s]} 條`).join('、')}">${bar}</div>
       <div class="pl-legend">${legend}</div>
-      <p class="pl-asof">共 ${total} 條・查證截至 ${esc(fmtDate(data.meta.asOf))}・任期至 ${esc(fmtDate(data.meta.termEnd))}</p>
+      <p class="pl-asof">共 ${total} 條・查證截至 ${esc(fmtDate(data.meta.asOf))}・任期至 ${esc(fmtDate(data.meta.termEnd))}${daysLeft(data.meta.termEnd)}</p>
     </div>
     <details class="pl-method">
       <summary>怎麼判斷的？（方法與限制）</summary>
