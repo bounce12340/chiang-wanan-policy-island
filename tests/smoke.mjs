@@ -59,8 +59,9 @@ for (const [name, opts] of [
   await page.waitForTimeout(600);
   check(await page.evaluate(() => document.body.classList.contains('pledge-mode') && window.__dbg().pledges.length > 0), `${name}: 2022 承諾圖層可切換`);
   await page.locator('[data-layer="links"]').click({ force: true });
-  await page.waitForTimeout(800);
-  check(await page.$$eval('.link-pill', (e) => e.filter((x) => getComputedStyle(x).display !== 'none').length) >= 8, `${name}: 政策關係弧線可顯示`);
+  const pillsShown = await page.waitForFunction(() => [...document.querySelectorAll('.link-pill')].filter((x) => getComputedStyle(x).display !== 'none').length, null, { timeout: 8000 })
+    .then((h) => h.jsonValue()).catch(() => 0);
+  check(pillsShown >= 8, `${name}: 政策關係弧線可顯示（${pillsShown} 條）`);
   await page.locator('[data-link="0"]').click({ force: true });
   check(await page.$eval('#pledge-pop', (e) => !e.hidden && e.querySelectorAll('.src').length > 0), `${name}: 關係說明附來源`);
   await page.locator('[data-layer="items"]').click({ force: true });
