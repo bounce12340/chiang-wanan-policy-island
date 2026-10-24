@@ -47,6 +47,14 @@ for (const [name, opts] of [
   check(await page.$('#stage canvas') !== null, `${name}: 3D 畫布已建立`);
   check(!(await page.$eval('[data-view="island"]', (b) => b.disabled)), `${name}: 島嶼檢視可用（3D 沒有退回清單）`);
 
+  await page.goto(`${BASE}/#/tour`, { waitUntil: 'load' });
+  await page.waitForFunction(() => document.querySelector('#loading')?.classList.contains('is-done'), null, { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  check(await page.$eval('#tour', (t) => !t.hidden && t.querySelector('.tour-cap h3')?.textContent.length > 0), `${name}: 自動導覽可啟動`);
+  await page.locator('#tour [data-t="exit"]').click({ force: true });
+  await page.waitForTimeout(400);
+  check(await page.$eval('#tour', (t) => t.hidden), `${name}: 自動導覽可離開`);
+
   await page.goto(`${BASE}/#/housing`, { waitUntil: 'load' });
   await page.waitForFunction(() => document.querySelector('#loading')?.classList.contains('is-done'), null, { timeout: 30000 });
   await page.waitForTimeout(1500);

@@ -1203,6 +1203,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       let L = 0, R = W, T = bar ? bar.getBoundingClientRect().bottom : 0, B = H;
       const tb = document.getElementById('timebar');
       if (shown(tb)) T = Math.max(T, rect('timebar').bottom);
+      const tourEl = document.getElementById('tour');
+      if (tourEl && !tourEl.hidden) B = Math.min(B, rect('tour').top);
       if (small) {
         if (shown(hero)) B = rect('hero').top;
         else if (shown(legend)) B = rect('legend').top;
@@ -1216,6 +1218,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     }
     // 手機：面板在下、標題列在上，焦點放在兩者之間；桌機：面板在右
     const bar = document.querySelector('.topbar');
+    if (!panel.classList.contains('is-open')) {
+      // 導覽模式：沒有面板，焦點放在標題列與底部字幕之間
+      const cap = document.getElementById('tour');
+      const capH = cap && !cap.hidden ? container.clientHeight - cap.getBoundingClientRect().top : 0;
+      const topH = bar ? bar.getBoundingClientRect().bottom : 0;
+      inset.tx = 0; inset.ty = (capH - topH) / 2;
+      return;
+    }
     if (small) { inset.tx = 0; inset.ty = (panel.offsetHeight - (bar ? bar.offsetHeight + 8 : 0)) / 2; } else { inset.tx = (panel.offsetWidth + 12) / 2; inset.ty = 0; }
   }
   function applyInset(dtSec) {

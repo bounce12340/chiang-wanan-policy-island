@@ -7,6 +7,7 @@ const STATUS = {
 };
 const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
 import { loadPledges, renderPledges, focusPledge } from './pledges.js';
+import { createTour } from './tour.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -74,6 +75,7 @@ async function boot() {
   const byId = new Map(themes.map((t) => [t.id, t]));
   const allItems = themes.flatMap((t) => t.items.map((i) => ({ ...i, theme: t })));
   let world = null; // 3D 場景稍後才建立；在那之前所有 world?.xxx 呼叫都安全略過
+  let tour = null; // 自動導覽，3D 啟動後才建立
 
   $('#about-updated').textContent = fmtDate(data.meta.updated);
   $('#foot-updated').textContent = fmtDate(data.meta.updated);
@@ -130,6 +132,7 @@ async function boot() {
   function openTheme(id, itemId, { fromHash = false } = {}) {
     const theme = byId.get(id);
     if (!theme) return;
+    if (tour?.active) tour.stop();
     currentTheme = id;
     hideHero();
     closeBubble();
@@ -328,6 +331,7 @@ async function boot() {
 
   let view = 'island';
   function setView(v) {
+    if (v !== 'island' && tour?.active) tour.stop();
     view = v;
     document.querySelectorAll('.view-btn').forEach((b) => {
       const on = b.dataset.view === v;
@@ -566,9 +570,31 @@ async function boot() {
 
   applyTime();
 
+  // ---------- 自動導覽 ----------
+  if (world) {
+    tour = createTour({
+      world, themes, byId, loadPledges,
+      onStart: () => {
+        stopPlay();
+        closeBubble();
+        if (view !== 'island') setView('island');
+        if (currentTheme) { currentTheme = null; panel.classList.remove('is-open'); panel.setAttribute('aria-hidden', 'true'); markIndexActive(); }
+        hideHero();
+        history.replaceState(null, '', '#/tour');
+      },
+      onEnd: () => { history.replaceState(null, '', location.pathname + location.search); setTimeout(() => world.refreshLayout(), 50); },
+      onExplore: () => openTheme(themes[0].id),
+      onPledges: (id) => { setView('pledges'); if (id) ensurePledges().then(() => focusPledge(pledgesRoot, id)); },
+    });
+    $('#btn-tour').addEventListener('click', () => tour.start());
+  } else {
+    $('#btn-tour').hidden = true;
+  }
+
   // ---------- deep link ----------
   function fromHash() {
     const [, id, itemId] = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/) || [];
+    if (id === 'tour') { if (tour && !tour.active) tour.start(); return; }
     if (id === 'pledges') {
       setView('pledges');
       if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));

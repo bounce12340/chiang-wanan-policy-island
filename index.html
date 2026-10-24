@@ -71,7 +71,8 @@
     <p class="hero-note" id="hero-note"></p>
     <div class="hero-actions">
       <button class="cta" id="btn-start">開始探索</button>
-      <button class="cta cta-2" id="btn-pledges">看 2022 政見兌現</button>
+      <button class="cta cta-2" id="btn-tour">▶ <span class="hide-sm">70 秒</span>導覽</button>
+      <button class="cta cta-2" id="btn-pledges">2022 政見兌現</button>
     </div>
   </section>
 
@@ -129,6 +130,18 @@
   <main class="overlay-view" id="pledges-view" hidden>
     <div class="overlay-inner" id="pledges-inner"><p class="lead">載入中…</p></div>
   </main>
+
+  <section class="tour" id="tour" hidden aria-label="自動導覽" aria-live="polite">
+    <div class="tour-bar" aria-hidden="true"></div>
+    <div class="tour-cap"></div>
+    <div class="tour-ctrl">
+      <button data-t="prev" aria-label="上一站">⏮</button>
+      <button data-t="play" aria-label="暫停"><span class="i-pause">❚❚</span><span class="i-play">▶</span></button>
+      <button data-t="next" aria-label="下一站">⏭</button>
+      <span class="tour-count"></span>
+      <button data-t="exit" class="tour-exit">離開導覽 ✕</button>
+    </div>
+  </section>
 
   <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 
