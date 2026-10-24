@@ -86,7 +86,7 @@ for (const [name, opts] of [
     check(await page.$eval(`#${v}-view`, (el) => !el.hidden), `${name}: 切換到 ${v} 檢視`);
   }
   check(await page.$$eval('#mayors-view .mayor', (e) => e.length) === 5 && await page.$$eval('#mayors-view .relay', (e) => e.length) >= 4, `${name}: 市長接力顯示 5 任市長與跨任期建設`);
-  check(await page.$$eval('#ledger-view .lg-group', (e) => e.length) === 7, `${name}: 民生帳本顯示 7 個族群`);
+  check(await page.$$eval('#ledger-view .lg-group', (e) => e.length) >= 10, `${name}: 民生帳本顯示各族群`);
   check(await page.$$eval('#tl-future .future-item', (e) => e.length) > 10, `${name}: 時間軸顯示未來計畫`);
   await page.waitForSelector('.pl', { timeout: 10000 });
   check(await page.$$eval('.pl', (e) => e.length) === pledgeCount, `${name}: 政見卡片數 = ${pledgeCount}`);
