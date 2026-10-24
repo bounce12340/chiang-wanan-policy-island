@@ -9,6 +9,7 @@ const STATUS_ORDER = ['done', 'in_progress', 'proposal', 'pledge'];
 import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, countByStatus, reportUrl } from './pledges.js';
 import { createTour } from './tour.js';
 import { loadMayors, renderMayors } from './mayors.js';
+import { loadLedger, renderLedger } from './ledger.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -295,6 +296,7 @@ async function boot() {
         html += `<div class="tl-row" style="--dot:${STATUS[i.status]?.color}"><div class="tl-when">—</div><div>${itemHTML(i, i.theme, { showTheme: true })}</div></div>`;
       });
     }
+    html += '<div id="tl-future"></div>';
     $('#timeline-inner').innerHTML = html;
   }
   renderList();
@@ -357,6 +359,9 @@ async function boot() {
     $('#timeline-view').hidden = v !== 'timeline';
     $('#pledges-view').hidden = v !== 'pledges';
     $('#mayors-view').hidden = v !== 'mayors';
+    $('#ledger-view').hidden = v !== 'ledger';
+    if (v === 'ledger') ensureLedger();
+    if (v === 'timeline') ensureFuture().catch(() => {});
     if (v === 'pledges') ensurePledges();
     if (v === 'mayors') ensureMayors();
     const islandUi = v === 'island';
@@ -375,6 +380,17 @@ async function boot() {
     if (!t) return null;
     if (!itemId) return t.name;
     return t.items.find((i) => i.id === itemId)?.title || null;
+  }
+  let ledgerReady = null;
+  function ensureLedger() {
+    if (!ledgerReady) {
+      ledgerReady = loadLedger().then((ld) => renderLedger($('#ledger-inner'), ld)).catch((err) => {
+        ledgerReady = null;
+        console.warn(err);
+        $('#ledger-inner').innerHTML = '<p class="lead">民生帳本資料載入失敗，請重新整理再試一次。</p>';
+      });
+    }
+    return ledgerReady;
   }
   let mayorsReady = null;
   function ensureMayors() {
@@ -582,6 +598,7 @@ async function boot() {
       onHoverItem,
       onSelectPerson: (meta, person) => showPersonBubble(meta, person),
       onSelectPledge: (id) => showPledgePop(id),
+      onSelectFuture: (id) => showFuturePop(id),
       onHoverPledge,
     });
     world.onBubbleGone(() => { bubbleOpen = false; });
@@ -610,6 +627,13 @@ async function boot() {
   let pledgeData = null;
   const pop = $('#pledge-pop');
   function onHoverPledge(h, x, y) {
+    if (h?.futureId) {
+      const f = futureData?.items.find((q) => q.id === h.futureId);
+      if (!f) { tip.hidden = true; return; }
+      tip.innerHTML = `<b>${esc(f.title)}</b><span>${f.kind === 'campaign' ? '競選承諾' : '市府計畫'}・${esc(f.stage)}${f.targetYear ? `・目標 ${f.targetYear}` : ''}</span>`;
+      tip.style.left = `${x}px`; tip.style.top = `${y}px`; tip.hidden = false;
+      return;
+    }
     const p = h && pledgeData?.items.find((q) => q.id === h.pledgeId);
     if (!p) { tip.hidden = true; return; }
     tip.innerHTML = `<b>${esc(p.pledge.length > 46 ? p.pledge.slice(0, 45) + '…' : p.pledge)}</b><span>2022 承諾・${PLEDGE_STATUS[p.status].label}</span>`;
@@ -672,6 +696,46 @@ async function boot() {
     world?.setLinks(linkData.links, (k) => showLinkPop(k));
   }
 
+  // ---------- 未來藍圖 ----------
+  const FUTURE_COLORS = { city_plan: '#4fd6ff', campaign: '#ff7ab6' };
+  let futureData = null;
+  async function ensureFuture() {
+    if (futureData) return futureData;
+    const res = await fetch('./data/future.json', { cache: 'no-cache' });
+    futureData = await res.json();
+    world?.setFuture(futureData.items.map((f) => ({ id: f.id, themeId: f.theme, kind: f.kind })), FUTURE_COLORS);
+    renderFutureTimeline();
+    return futureData;
+  }
+  function futureCard(f) {
+    const kind = f.kind === 'campaign' ? '競選承諾' : '市府計畫';
+    return `<p class="pop-kicker"><span class="badge" style="background:${f.kind === 'campaign' ? '#d0457a' : '#1f8fb3'}">${kind}</span>${esc(byId.get(f.theme)?.name || '')}・${esc(f.stage)}${f.targetYear ? `・目標 ${f.targetYear} 年` : ''}</p>
+      <p class="pop-quote">${esc(f.title)}</p>
+      <p class="pop-sum">${esc((f.facts || []).join(' '))}</p>
+      ${f.critical?.length ? `<details class="pl-more pl-crit"><summary>質疑與不同看法（${f.critical.length}）</summary><ul>${f.critical.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : ''}
+      <div class="sources">${(f.sources || []).map((s) => `<a class="src" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer" title="${esc(s.title || s.url)}">↗ ${esc(sourceLabel(s))}</a>`).join('')}</div>`;
+  }
+  function showFuturePop(id) {
+    const f = futureData?.items.find((q) => q.id === id);
+    if (!f) return;
+    tip.hidden = true;
+    pop.innerHTML = `<button class="pop-close" aria-label="關閉">×</button>${futureCard(f)}`;
+    pop.hidden = false;
+  }
+  function renderFutureTimeline() {
+    const box = document.getElementById('tl-future');
+    if (!box || !futureData) return;
+    const list = [...futureData.items].sort((a, b) => (a.targetYear ?? 9999) - (b.targetYear ?? 9999));
+    let html = `<div class="tl-year">未來</div><p class="lead">${esc(futureData.meta.lead)}</p><ul class="tl-rules">${futureData.meta.rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`;
+    let yr = null;
+    list.forEach((f) => {
+      const y = f.targetYear ? String(f.targetYear) : '未定';
+      if (y !== yr) { yr = y; html += `<div class="tl-fy">${y === '未定' ? '目標年份未定' : `目標 ${y} 年`}</div>`; }
+      html += `<div class="tl-row" style="--dot:${f.kind === 'campaign' ? '#d0457a' : '#1f8fb3'}"><div class="tl-when">${esc(y)}</div><div><article class="item future-item">${futureCard(f)}</article></div></div>`;
+    });
+    box.innerHTML = html;
+  }
+
   const layerBox = $('#layer');
   const LEGEND_LINKS = '<small>每條弧線連起兩項有關聯的政策，點編號或清單看說明與來源。只收錄來源明確寫出關聯者。</small>';
   let pledgeLegend = '';
@@ -679,9 +743,11 @@ async function boot() {
     layerBox.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.layer === mode)));
     document.body.classList.toggle('pledge-mode', mode === 'pledges');
     document.body.classList.toggle('link-mode', mode === 'links');
+    document.body.classList.toggle('future-mode', mode === 'future');
     const leg = $('#layer-legend');
     leg.hidden = mode === 'items';
-    leg.innerHTML = mode === 'pledges' ? pledgeLegend : mode === 'links' ? LEGEND_LINKS : '';
+    leg.innerHTML = mode === 'pledges' ? pledgeLegend : mode === 'links' ? LEGEND_LINKS
+      : mode === 'future' ? `<span><i style="background:${FUTURE_COLORS.city_plan}"></i>市府計畫</span><span><i style="background:${FUTURE_COLORS.campaign}"></i>競選承諾</span><small>浮在島上的光柱是尚未完成的計畫，點一下看階段、目標年份與質疑。完整連任政見尚未公布。</small>` : '';
     pop.hidden = true;
     if (mode !== 'items') { stopPlay(); resetTimeline(); hideHero(); }
     world?.setPledgeMode(mode === 'pledges');
@@ -693,6 +759,8 @@ async function boot() {
       }).join('')}</ol>${LEGEND_LINKS}`;
     }
     world?.setLinkMode(mode === 'links');
+    if (mode === 'future') { try { await ensureFuture(); } catch (err) { console.warn('未來藍圖資料載入失敗', err); } }
+    world?.setFutureMode(mode === 'future');
     setTimeout(() => world?.refreshLayout(), 30);
   }
   layerBox.addEventListener('click', (e) => {
@@ -720,7 +788,7 @@ async function boot() {
     tour = createTour({
       world, themes, byId, loadPledges,
       onStart: () => {
-        if (!document.body.classList.contains('pledge-mode') && !document.body.classList.contains('link-mode')) { /* 已是施政圖層 */ } else setLayer('items');
+        if (['pledge-mode', 'link-mode', 'future-mode'].some((c) => document.body.classList.contains(c))) setLayer('items');
         stopPlay();
         closeBubble();
         if (view !== 'island') setView('island');
@@ -748,6 +816,8 @@ async function boot() {
     if (id === 'tour') { if (tour && !tour.active) tour.start(); return; }
     if (id === 'story') { if (tour) tour.start(itemId); return; }
     if (id === 'mayors') { setView('mayors'); return; }
+    if (id === 'ledger') { setView('ledger'); return; }
+    if (id === 'future') { setView('island'); hideHero(); setLayer('future'); return; }
     if (id === 'pledges') {
       setView('pledges');
       if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));

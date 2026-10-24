@@ -64,6 +64,9 @@ for (const [name, opts] of [
   check(pillsShown >= 8, `${name}: 政策關係弧線可顯示（${pillsShown} 條）`);
   await page.locator('[data-link="0"]').click({ force: true });
   check(await page.$eval('#pledge-pop', (e) => !e.hidden && e.querySelectorAll('.src').length > 0), `${name}: 關係說明附來源`);
+  await page.locator('[data-layer="future"]').click({ force: true });
+  await page.waitForTimeout(800);
+  check(await page.evaluate(() => document.body.classList.contains('future-mode')), `${name}: 未來藍圖圖層可切換`);
   await page.locator('[data-layer="items"]').click({ force: true });
   check(await page.evaluate(() => window.__dbg().peopleCount >= 200), `${name}: 島上居民 200 人以上`);
 
@@ -77,12 +80,14 @@ for (const [name, opts] of [
   await page.waitForTimeout(1500);
   check(await page.$eval('#panel', (p) => p.classList.contains('is-open')), `${name}: 深連結打開居住島面板`);
 
-  for (const v of ['list', 'timeline', 'mayors', 'pledges']) {
+  for (const v of ['list', 'timeline', 'ledger', 'mayors', 'pledges']) {
     await page.click(`[data-view="${v}"]`);
     await page.waitForTimeout(600);
     check(await page.$eval(`#${v}-view`, (el) => !el.hidden), `${name}: 切換到 ${v} 檢視`);
   }
   check(await page.$$eval('#mayors-view .mayor', (e) => e.length) === 5 && await page.$$eval('#mayors-view .relay', (e) => e.length) >= 4, `${name}: 市長接力顯示 5 任市長與跨任期建設`);
+  check(await page.$$eval('#ledger-view .lg-group', (e) => e.length) === 7, `${name}: 民生帳本顯示 7 個族群`);
+  check(await page.$$eval('#tl-future .future-item', (e) => e.length) > 10, `${name}: 時間軸顯示未來計畫`);
   await page.waitForSelector('.pl', { timeout: 10000 });
   check(await page.$$eval('.pl', (e) => e.length) === pledgeCount, `${name}: 政見卡片數 = ${pledgeCount}`);
   await page.click('[data-view="island"]');

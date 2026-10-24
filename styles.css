@@ -558,7 +558,7 @@ body.touring .footnote { display: none; }
 .layer {
   position: fixed; z-index: 15; left: 16px; bottom: 16px; padding: 6px; border-radius: 14px;
   background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--line); box-shadow: var(--shadow); max-width: 300px;
+  border: 1px solid var(--line); box-shadow: var(--shadow); max-width: 420px;
 }
 .layer[hidden] { display: none; }
 body:not(.started) .layer, body.touring .layer { display: none; }
@@ -677,3 +677,44 @@ body.night .district-label b { color: #eef2fb; }
   .mayors { grid-template-columns: 1fr; }
   .view-btn { font-size: 12.5px; padding: 7px 1px; }
 }
+
+/* ---------- 民生帳本 ---------- */
+.lg-sub { margin: -4px 0 10px; font-size: 13px; color: var(--ink-soft); }
+.lg-bars { list-style: none; margin: 0 0 14px; padding: 12px 14px; display: grid; gap: 6px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
+.lg-bars a { display: grid; grid-template-columns: 9.5em 1fr 2em; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: 13.5px; }
+.lg-bar { height: 10px; border-radius: 9px; background: var(--paper-2); overflow: hidden; }
+.lg-bar i { display: block; height: 100%; background: var(--ink); opacity: .75; }
+.lg-bars b { font-family: var(--font-num); text-align: right; }
+.lg-groups, .lg-probs { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.lg-group, .lg-prob { min-width: 0; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--paper); scroll-margin: 100px; }
+.lg-group h4 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: baseline; gap: 8px; }
+.lg-group h4 small { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+.lg-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.lg-group li { border-top: 1px dashed var(--line); padding-top: 8px; }
+.lg-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.lg-top b { font-size: 14.5px; }
+.lg-when { margin-left: auto; font: 500 11.5px var(--font-num); color: var(--ink-soft); }
+.lg-change { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 2px; font-size: 13.5px; }
+.lg-before { color: var(--ink-soft); text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); }
+.lg-after { font-weight: 700; }
+.lg-arrow { color: var(--ink-soft); }
+.lg-meta, .lg-note { margin: 2px 0 6px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; }
+.lg-note { border-left: 3px solid var(--line); padding-left: 8px; }
+.lg-prob p { margin: 6px 0; font-size: 13.5px; line-height: 1.65; color: var(--ink-soft); }
+.lg-prob strong { color: var(--ink); }
+.lg-ba { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.lg-ba div { background: var(--paper-2); border-radius: 10px; padding: 8px 10px; font-size: 13px; line-height: 1.55; }
+.lg-ba small { display: block; font-weight: 700; color: var(--ink-soft); margin-bottom: 2px; }
+.lg-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--c); color: #fff; font-size: 12px; font-weight: 700; margin-right: 4px; }
+@media (max-width: 760px) { .lg-groups, .lg-probs { grid-template-columns: 1fr; } .lg-bars a { grid-template-columns: 7.5em 1fr 1.6em; } .lg-ba { grid-template-columns: 1fr; } }
+
+/* ---------- 未來藍圖 ---------- */
+body.future-mode .timebar, body.future-mode .legend { display: none !important; }
+.tl-rules { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: var(--ink-soft); line-height: 1.7; }
+.tl-fy { font: 700 15px var(--font-num); margin: 18px 0 2px 8px; color: var(--ink-soft); }
+.future-item { border-style: dashed; }
+.future-item .pop-sum { max-height: none; }
+.layer-seg { flex-wrap: wrap; }
+@media (max-width: 760px) { .layer-seg button { flex: 1 1 22%; font-size: 12.5px; padding: 7px 2px; } }
+
+.future-item + .tl-when, .tl-row .future-item { margin-top: 6px; }

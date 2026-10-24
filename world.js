@@ -54,7 +54,7 @@ function rng(seed) {
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge }) {
+export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge, onSelectFuture }) {
   const isSmall = window.matchMedia('(max-width: 760px)').matches;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1458,6 +1458,65 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     links.flow.instanceMatrix.needsUpdate = true;
   }
 
+  // ---------- 未來藍圖：已公布、尚未完成的計畫，以半透明光柱浮在島上 ----------
+  const future = { on: false, list: [], hits: [] };
+  function setFuture(list, colors) {
+    if (future.list.length) return;
+    const byIsle = new Map();
+    list.forEach((f) => { if (islands.has(f.themeId)) (byIsle.get(f.themeId) || byIsle.set(f.themeId, []).get(f.themeId)).push(f); });
+    const mats = {};
+    Object.entries(colors).forEach(([k, c]) => {
+      mats[k] = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.9, transparent: true, opacity: 0.78, depthWrite: false, flatShading: true });
+      mats[k].userData.base = 0.9;
+      glowMats.push(mats[k]);
+    });
+    const colGeo = new THREE.CylinderGeometry(0.36, 0.36, 2.0, 6, 1, true);
+    const capGeo = new THREE.OctahedronGeometry(0.3, 0);
+    const ringGeo = new THREE.TorusGeometry(0.5, 0.04, 6, 24);
+    byIsle.forEach((arr, themeId) => {
+      const isle = islands.get(themeId);
+      arr.forEach((f, k) => {
+        const a = (k / arr.length) * Math.PI * 2 + 0.6;
+        const r = arr.length > 1 ? 1.5 : 0;
+        const g = new THREE.Group();
+        g.position.set(Math.cos(a) * r, TOP + 2.8, Math.sin(a) * r);
+        const m = mats[f.kind] || Object.values(mats)[0];
+        const col = new THREE.Mesh(colGeo, m);
+        const cap = new THREE.Mesh(capGeo, m); cap.position.y = 1.1;
+        const ring = new THREE.Mesh(ringGeo, m); ring.rotation.x = Math.PI / 2; ring.position.y = -0.8;
+        const hit = new THREE.Mesh(hitGeo, hitMat); hit.scale.setScalar(1.6);
+        hit.userData = { themeId, futureId: f.id };
+        g.add(col, cap, ring, hit);
+        g.userData = { f, phase: k * 0.8, cap, ring };
+        isle.root.add(g);
+        future.list.push(g);
+        future.hits.push(hit);
+        g.visible = false;
+      });
+    });
+    if (future.on) setFutureMode(true);
+  }
+  function setFutureMode(on) {
+    future.on = !!on;
+    future.list.forEach((g) => { g.visible = future.on; });
+    future.hits.forEach((h) => {
+      const i = pickables.indexOf(h);
+      if (future.on && i < 0) pickables.push(h);
+      if (!future.on && i >= 0) pickables.splice(i, 1);
+    });
+  }
+  function syncFuture(elapsed) {
+    if (!future.on) return;
+    const far = THREE.MathUtils.clamp(camera.position.distanceTo(controls.target) / 40, 1, 2.0); // 鳥瞰時放大
+    for (const g of future.list) {
+      const { phase, cap, ring, f } = g.userData;
+      cap.rotation.y = elapsed * 1.2 + phase;
+      ring.scale.setScalar(1 + ((elapsed * 0.6 + phase) % 1) * 0.8);
+      const s = (hovered?.futureId === f.id ? 1.25 : 1) * far;
+      g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, s, 0.2));
+    }
+  }
+
   function syncPledges(elapsed) {
     if (!pledge.on || !pledge.poles) return;
     // 鏡頭拉遠時把承諾牌放大，鳥瞰也看得出顏色
@@ -1492,7 +1551,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     if (!hit) return null;
     const d = hit.object.userData;
     if (d.pledgeId) return { themeId: d.themeId, pledgeId: d.pledgeId };
-    if (d.itemId && pledge.on) return { themeId: d.themeId };
+    if (d.futureId) return { themeId: d.themeId, futureId: d.futureId };
+    if (d.itemId && (pledge.on || future.on)) return { themeId: d.themeId };
     if (d.itemId) {
       const beacon = hit.object.parent;
       if (!beacon.userData.shown) return { themeId: d.themeId };
@@ -1510,7 +1570,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     }
     renderer.domElement.style.cursor = h ? 'pointer' : '';
     onHoverItem?.(h?.itemId ? h : null, clientX, clientY);
-    onHoverPledge?.(h?.pledgeId ? h : null, clientX, clientY);
+    onHoverPledge?.(h?.pledgeId || h?.futureId ? h : null, clientX, clientY);
   }
 
   const el = renderer.domElement;
@@ -1525,7 +1585,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   el.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
     const h = pick(e.clientX, e.clientY);
-    if (!h?.itemId && !h?.pledgeId && personAt(e.clientX, e.clientY, false)) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
+    if (!h?.itemId && !h?.pledgeId && !h?.futureId && personAt(e.clientX, e.clientY, false)) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
     setHover(h, e.clientX, e.clientY);
   });
   el.addEventListener('pointerleave', () => setHover(null));
@@ -1536,13 +1596,14 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     if (moved > 7) return;
     // 直接點中光柱或承諾牌時優先；否則才看附近有沒有居民
     const h = pick(e.clientX, e.clientY);
-    if (!h?.itemId && !h?.pledgeId) {
+    if (!h?.itemId && !h?.pledgeId && !h?.futureId) {
       const person = personAt(e.clientX, e.clientY, e.pointerType === 'touch');
       if (person && onSelectPerson) { onSelectPerson(person.meta, person); return; }
     }
     if (bubble) { hideBubble(); onBubbleGone?.(); } // 點別處就收起泡泡
     if (!h) return;
-    if (h.pledgeId) onSelectPledge?.(h.pledgeId);
+    if (h.futureId) onSelectFuture?.(h.futureId);
+    else if (h.pledgeId) onSelectPledge?.(h.pledgeId);
     else if (h.itemId) onSelectItem(h.themeId, h.itemId);
     else onSelectTheme(h.themeId);
   });
@@ -1847,6 +1908,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     syncBeacons();
     syncPledges(elapsed);
     syncLinks(elapsed);
+    syncFuture(elapsed);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -1901,6 +1963,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     focusTheme, resetView, setStatusFilter, setTimeCut, refreshLayout: setInset,
     showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
-    setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode,
+    setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
   };
 }

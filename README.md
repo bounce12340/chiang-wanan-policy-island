@@ -14,7 +14,9 @@ The site's interface and content are in Traditional Chinese.
   - **In progress** — under construction or being rolled out
   - **Planned** — proposed by the city or still being pursued, not yet approved
   - **Re-election pledge** — future commitments made during the campaign
-- **Five views:** 3D islands, list, timeline, the 2022 pledge tracker, and the mayors relay, with a status filter and a time-of-day toggle
+- **Six views:** 3D islands, list, timeline (now including future plans), the 2022 pledge tracker, the citizens' ledger, and the mayors relay, with a status filter and a time-of-day toggle
+- **Citizens' ledger (民生帳本):** for seven groups (pregnancy and newborn families, under-6s, students, youth, working-age adults, seniors, people with disabilities), every benefit the city added or raised during the term, shown as before → after with effective date, scope and sources. Central-government benefits are excluded; groups with nothing new are labelled as such. A second section tracks eight long-standing city problems with before/after indicators, rated "improved", "partly improved", "too early to tell" or "not improved" on the numbers, not on whether a policy was announced
+- **Future blueprint:** a fourth map layer showing announced-but-unfinished city plans and campaign commitments as translucent columns over the islands (colour separates city plans from campaign promises), plus a dated list at the end of the timeline. As of the research date no full re-election platform had been published
 - **Mayors relay:** every directly elected Taipei mayor since 1994 (Chen Shui-bian, Ma Ying-jeou, Hau Lung-bin, Ko Wen-je, Chiang Wan-an), each with 8 representative municipal actions and 2–3 widely reported municipal controversies, plus six cross-term projects (Taipei Dome, MRT Wenhu and Xinyi lines, YouBike, social housing, Beitou-Shilin Science Park) showing which administration did which stage. All five mayors are held to the same inclusion rules; personal court cases are excluded for everyone; colours mark terms, not parties. Data in [`data/mayors.json`](data/mayors.json)
 - **2022 pledge tracker:** all 83 pledges from Chiang's 2022 mayoral campaign, each checked against public records up to **2026-10-24** and rated against the pledge's own wording (numbers, deadlines, scope):
   - **Fulfilled**, **Partly fulfilled**, **In progress**, **Not fulfilled**, **Not measurable**, **No public data**
@@ -57,6 +59,7 @@ As of that date, no complete re-election platform had been published, so the re-
   - `vignettes.js`: the per-item scene library and the item → scene mapping
   - `pledges.js`: the 2022 pledge tracker view, loaded separately from the 3D scene
   - `tour.js`: the guided tour and the "day in the city" stories
+  - `mayors.js`, `ledger.js`: the mayors relay and citizens' ledger views (`data/mayors.json`, `data/ledger.json`, `data/future.json`)
   - `data/links.json`: the sourced policy links
 - Mobile performance: static meshes are merged per island, water waves run in a vertex shader, rendering pauses in list/timeline views and background tabs, idle phones are capped at 30 fps, and quality steps down automatically on slow devices (`?quality=high` or `?quality=low` overrides this)
 - Devices without WebGL fall back to the list view
