@@ -59,6 +59,13 @@
         <button class="tod-btn" data-tod="night" aria-pressed="false" title="夜晚"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>夜晚</span></button>
       </div>
       <button id="btn-tod-cycle" class="icon-btn tod-cycle" aria-label="切換時段（目前：白天）"></button>
+      <button id="btn-find" class="icon-btn" aria-label="搜尋全站（快捷鍵 / 或 Ctrl+K）" title="搜尋全站（/ 或 Ctrl+K）">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke-width="2.2"/><path d="M16 16l4.5 4.5" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+      <button id="btn-saved" class="icon-btn" aria-label="我的收藏" title="我的收藏">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="none" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span id="saved-count" class="count-badge" hidden></span>
+      </button>
       <button id="btn-about" class="icon-btn" aria-label="關於本站">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
@@ -76,7 +83,10 @@
       <button class="cta" id="btn-start">開始探索</button>
       <button class="cta cta-2" id="btn-tour">▶ <span class="hide-sm">70 秒</span>導覽</button>
       <button class="cta cta-2" id="btn-pledges">2022 政見兌現</button>
+      <button class="cta cta-2" id="btn-quiz">🎯 猜猜看</button>
     </div>
+    <p class="hero-fresh" id="hero-fresh" role="status" hidden></p>
+    <p class="hero-stories hero-who" id="hero-who"></p>
     <p class="hero-stories" id="hero-stories"><span>市民的一天：</span><button data-story="parent">👶 新手爸媽</button><button data-story="commuter">💼 通勤族</button><button data-story="senior">👵 長輩</button></p>
   </section>
 
@@ -109,7 +119,9 @@
       <button data-layer="future" aria-pressed="false">未來藍圖</button>
     </div>
     <div class="layer-legend" id="layer-legend" hidden></div>
+    <button class="who-btn" id="btn-who" type="button">👤 我是…（依身分看相關施政）</button>
   </aside>
+  <div class="who-bar" id="who-bar" role="status" hidden></div>
   <div class="pledge-pop" id="pledge-pop" role="dialog" aria-label="政見查證摘要" hidden></div>
 
   <aside class="legend" id="legend" aria-label="狀態篩選">
@@ -166,6 +178,36 @@
 
   <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 
+  <dialog id="finder" class="sheet sheet-finder" aria-label="搜尋全站">
+    <div class="fd-head">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="finder-input" type="search" placeholder="搜尋施政、政見、補助、市長…" autocomplete="off" aria-label="搜尋全站" aria-controls="finder-results">
+      <button class="sheet-x" type="button" data-close aria-label="關閉">esc</button>
+    </div>
+    <ul class="fd-list" id="finder-results" role="listbox" aria-label="搜尋結果"></ul>
+    <p class="fd-foot"><kbd>↑</kbd><kbd>↓</kbd> 選擇　<kbd>Enter</kbd> 開啟　<kbd>/</kbd> 或 <kbd>Ctrl</kbd>+<kbd>K</kbd> 隨時叫出</p>
+  </dialog>
+
+  <dialog id="saved" class="sheet" data-hash="saved" aria-labelledby="saved-h">
+    <button class="sheet-x" type="button" data-close aria-label="關閉">×</button>
+    <h2 id="saved-h">我的收藏</h2>
+    <div id="saved-body"></div>
+  </dialog>
+
+  <dialog id="who-sheet" class="sheet" data-hash="who" aria-labelledby="who-h">
+    <button class="sheet-x" type="button" data-close aria-label="關閉">×</button>
+    <h2 id="who-h">我是…</h2>
+    <p class="sv-note">選一個身分，島上只亮出跟你直接相關的施政，並可一鍵看民生帳本裡的補助變化。再點一次同一個身分即可取消。</p>
+    <div class="who-grid" id="who-grid"></div>
+    <p class="who-note" id="who-note"></p>
+  </dialog>
+
+  <dialog id="quiz" class="sheet sheet-quiz" data-hash="quiz" aria-labelledby="quiz-h">
+    <button class="sheet-x" type="button" data-close aria-label="關閉">×</button>
+    <h2 id="quiz-h">2022 政見猜猜看</h2>
+    <div id="quiz-body"></div>
+  </dialog>
+
   <dialog id="about" class="about">
     <form method="dialog"><button class="panel-close" aria-label="關閉">×</button></form>
     <h2>關於本站</h2>
@@ -185,6 +227,9 @@
       <li>外圈 11 座小島是臺北市各行政區的代表地標（信義區為中央的臺北 101），方位大致依實際地理排列，距離與大小為示意。</li>
       <li>「市民的一天」的角色是虛構的，只用來串起路線；每一站提到的政策事實都取自本站資料並附來源。</li>
       <li>每一項都有「回報錯誤」按鈕，會開一則 GitHub issue；請附上正確資訊的來源。</li>
+      <li>「我是…」依各項目內容寫明的適用對象（例如「育有 12 歲以下子女」「未滿 40 歲」）把施政歸到身分，只收直接相關者；這是本站整理，不是市府分類。</li>
+      <li>「政見猜猜看」從已兌現、部分兌現、未兌現三種狀態各抽幾題，比例不代表整體結果；答案與說明都來自政見兌現頁的查證資料。</li>
+      <li>收藏清單與「上次造訪後的新內容」只存在你這台裝置的瀏覽器裡（localStorage），本站沒有後端，不會收到這些資料。</li>
     </ul>
     <h3>選舉背景</h3>
     <div id="about-campaign"></div>

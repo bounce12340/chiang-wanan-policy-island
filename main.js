@@ -10,6 +10,7 @@ import { loadPledges, renderPledges, focusPledge, PLEDGE_STATUS, PLEDGE_ORDER, c
 import { createTour } from './tour.js';
 import { loadMayors, renderMayors } from './mayors.js';
 import { loadLedger, renderLedger } from './ledger.js';
+import { initExtras } from './extras.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -43,7 +44,7 @@ function itemHTML(item, theme, { showTheme = false } = {}) {
     <h3>${esc(item.title)}</h3>
     ${facts ? `<ul>${facts}</ul>` : ''}
     ${srcs ? `<div class="sources">${srcs}</div>` : ''}
-    <div class="item-actions"><a class="report-btn" href="${esc(reportUrl('施政項目', item.id, item.title, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a><button class="share-btn" data-share="/i/${esc(item.id)}" data-title="${esc(item.title)}">分享</button></div>
+    <div class="item-actions"><button class="fav-btn" data-fav="i:${esc(item.id)}" aria-pressed="false">收藏</button><a class="report-btn" href="${esc(reportUrl('施政項目', item.id, item.title, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a><button class="share-btn" data-share="/i/${esc(item.id)}" data-title="${esc(item.title)}">分享</button></div>
   </article>`;
 }
 
@@ -115,6 +116,7 @@ async function boot() {
 
   // ---------- status chips ----------
   let statusFilter = null;
+  let whoSet = null; // 「我是誰」：只顯示與該身分相關的施政
   const chipHTML = `<button class="chip" data-s="" aria-pressed="true">全部 <span class="n">${allItems.length}</span></button>` +
     STATUS_ORDER.map((s) => `<button class="chip" data-s="${s}" aria-pressed="false"><i style="background:${STATUS[s].color}"></i>${STATUS[s].label} <span class="n">${counts[s]}</span></button>`).join('');
   document.querySelectorAll('.status-chips').forEach((box) => {
@@ -131,7 +133,8 @@ async function boot() {
   });
   function applyFilterToDom() {
     document.querySelectorAll('.item').forEach((el) => {
-      el.classList.toggle('is-filtered', !!statusFilter && el.dataset.status !== statusFilter);
+      const id = el.id.replace(/^item-/, '');
+      el.classList.toggle('is-filtered', (!!statusFilter && el.dataset.status !== statusFilter) || (!!whoSet && el.id.startsWith('item-') && !whoSet.has(id)));
     });
   }
 
@@ -169,6 +172,7 @@ async function boot() {
       </div>`;
     panelInner.querySelector('.panel-art')?.addEventListener('error', (e) => e.target.remove());
     applyFilterToDom();
+    extras?.decorate(panelInner);
     markIndexActive();
     panel.classList.add('is-open');
     panel.setAttribute('aria-hidden', 'false');
@@ -236,6 +240,7 @@ async function boot() {
   });
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.querySelector('dialog[open]')) return;
     if (e.key === 'Escape') { if (!$('#pledge-pop').hidden) { $('#pledge-pop').hidden = true; return; } if (bubbleOpen) { closeBubble(); return; } closePanel(); }
     // 數字鍵 1–9 直接打開對應的政策島
     if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.('input, textarea') && view === 'island' && !tour?.active) {
@@ -249,14 +254,22 @@ async function boot() {
   });
   // 手機：從把手往下拖可關閉面板
   {
-    let y0 = null;
+    let y0 = null, sx = null, sy = null;
     const grip = panel.querySelector('.panel-grip');
     panel.addEventListener('touchstart', (e) => {
       if (e.target === grip || panelInner.scrollTop <= 0) y0 = e.touches[0].clientY;
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
     }, { passive: true });
     panel.addEventListener('touchend', (e) => {
-      if (y0 !== null && e.changedTouches[0].clientY - y0 > 90) closePanel();
+      const t = e.changedTouches[0];
+      if (y0 !== null && t.clientY - y0 > 90) { closePanel(); y0 = null; return; }
       y0 = null;
+      // 左右滑：切換上一座／下一座島（避開可以橫向捲動的來源列與按鈕）
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (currentTheme && Math.abs(dx) > 70 && Math.abs(dy) < 45 && !e.target.closest('.sources, button, a')) {
+        const idx = themes.findIndex((x) => x.id === currentTheme);
+        openTheme(themes[(idx + (dx < 0 ? 1 : -1) + themes.length) % themes.length].id);
+      }
     });
   }
 
@@ -335,9 +348,6 @@ async function boot() {
       : '<p class="hits-count">找不到符合的項目，試試其他關鍵字。</p>';
   }
   searchInput.addEventListener('input', runSearch);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== searchInput && !e.target.closest?.('input, textarea')) { e.preventDefault(); searchInput.focus(); }
-  });
   $('#index').addEventListener('click', (e) => {
     const b = e.target.closest('[data-theme]');
     if (!b) return;
@@ -371,9 +381,18 @@ async function boot() {
     else if (currentTheme) panel.classList.add('is-open');
     world?.setPaused(!islandUi);
     applyFilterToDom();
+    // 每個檢視都有自己的網址，方便分享；政見頁的篩選另外由 onFilter 寫入
+    if (!silentHash) {
+      if (['list', 'timeline', 'ledger', 'mayors'].includes(v)) history.replaceState(null, '', `#/${v}`);
+      if (v === 'pledges' && !location.hash.startsWith('#/pledges')) history.replaceState(null, '', '#/pledges');
+      if (v === 'island' && /^#\/(list|timeline|ledger|mayors|pledges)\b/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    }
   }
+  let silentHash = false;
   // ---------- 2022 政見兌現 ----------
   let pledgesReady = null;
+  let pledgeCtl = null;
+  let extras = null;
   const pledgesRoot = $('#pledges-inner');
   function itemTitle(themeId, itemId) {
     const t = byId.get(themeId);
@@ -408,10 +427,17 @@ async function boot() {
   function ensurePledges() {
     if (!pledgesReady) {
       pledgesReady = loadPledges().then((pd) => {
-        renderPledges(pledgesRoot, pd, {
+        pledgeCtl = renderPledges(pledgesRoot, pd, {
           itemTitle,
           onOpen: (themeId, itemId) => { setView('island'); openTheme(themeId, itemId); },
+          onFilter: ({ status, cat }) => {
+            const q = new URLSearchParams();
+            if (status) q.set('status', status);
+            if (cat) q.set('cat', cat);
+            history.replaceState(null, '', `#/pledges${q.toString() ? `?${q}` : ''}`);
+          },
         });
+        extras?.decorate(pledgesRoot);
       }).catch((err) => {
         pledgesReady = null;
         console.warn(err);
@@ -731,9 +757,10 @@ async function boot() {
     list.forEach((f) => {
       const y = f.targetYear ? String(f.targetYear) : '未定';
       if (y !== yr) { yr = y; html += `<div class="tl-fy">${y === '未定' ? '目標年份未定' : `目標 ${y} 年`}</div>`; }
-      html += `<div class="tl-row" style="--dot:${f.kind === 'campaign' ? '#d0457a' : '#1f8fb3'}"><div class="tl-when">${esc(y)}</div><div><article class="item future-item">${futureCard(f)}</article></div></div>`;
+      html += `<div class="tl-row" style="--dot:${f.kind === 'campaign' ? '#d0457a' : '#1f8fb3'}"><div class="tl-when">${esc(y)}</div><div><article class="item future-item" id="future-${esc(f.id)}">${futureCard(f)}</article></div></div>`;
     });
     box.innerHTML = html;
+    extras?.decorate(box);
   }
 
   const layerBox = $('#layer');
@@ -810,17 +837,45 @@ async function boot() {
     $('#hero-stories').hidden = true;
   }
 
+  // ---------- 互動加值：搜尋、收藏、我是誰、猜猜看、新內容 ----------
+  extras = initExtras({
+    esc, fmtDate, toast, STATUS, allItems, byId,
+    openTheme, setView, hideHero,
+    ensurePledges, ensureLedger, ensureMayors,
+    focusPledge: (id) => focusPledge(pledgesRoot, id),
+    setPledgeFilters: (f) => pledgeCtl?.setFilters(f),
+    loadPledges, loadLedger, loadMayors, loadFuture: ensureFuture,
+    setWho: (set) => {
+      whoSet = set;
+      world?.setItemSet(set);
+      applyFilterToDom();
+    },
+  });
+  extras.decorate(document);
+  new Promise((r) => whenIdle(r)).then(() => extras.checkFresh());
+
   // ---------- deep link ----------
   function fromHash() {
-    const [, id, itemId] = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/) || [];
+    const [, id, itemId, query] = location.hash.match(/^#\/([\w-]+)(?:\/([^?]+))?(?:\?(.*))?$/) || [];
+    if (id === 'list' || id === 'timeline') { setView(id); return; }
+    if (id === 'quiz') { extras.openQuiz(); return; }
+    if (id === 'who') { extras.setWho(itemId); return; }
+    if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
+    if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }
     if (id === 'tour') { if (tour && !tour.active) tour.start(); return; }
     if (id === 'story') { if (tour) tour.start(itemId); return; }
     if (id === 'mayors') { setView('mayors'); return; }
     if (id === 'ledger') { setView('ledger'); return; }
     if (id === 'future') { setView('island'); hideHero(); setLayer('future'); return; }
     if (id === 'pledges') {
+      silentHash = true;
       setView('pledges');
+      silentHash = false;
       if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));
+      else if (query) {
+        const q = new URLSearchParams(query);
+        ensurePledges().then(() => pledgeCtl?.setFilters({ status: q.get('status'), cat: q.get('cat') }));
+      }
       return;
     }
     if (id && byId.has(id)) openTheme(id, itemId, { fromHash: true });

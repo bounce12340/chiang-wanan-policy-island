@@ -37,7 +37,13 @@ The site's interface and content are in Traditional Chinese.
 - **Embeddable pledge card:** `/embed/pledge.html?id=<pledge-id>` can be embedded with an iframe on any site
 - **Report an error:** every card opens a pre-filled GitHub issue with the item ID and current rating
 - **Term timeline slider:** drag or play through 2022-12 → today; policy markers light up by each item's event date (opening, signing, announcement), with a ticker showing the latest item. The date reflects the recorded event, not when work on a policy began.
-- **Deep links** to any island, item or pledge, e.g. `#/transport`, `#/housing/housing-happy` or `#/pledges/p22-media-01`
+- **Site-wide search (`/` or Ctrl/⌘+K):** one box searches policy items, 2022 pledges, the citizens' ledger, the mayors relay and the future blueprint, with keyboard navigation; 台 and 臺 match each other
+- **"I am…" (`#/who/<id>`):** pick one of 12 groups (parents-to-be, young-child parents, students, youth, workers, seniors, people with disabilities, Indigenous residents, low-income households, single-parent and multiple-birth families, commuters, pet owners) and the islands light up only the items whose own text names that group, with one-tap links to that group's ledger entries and related 2022 pledges. The mapping is in [`data/personas.json`](data/personas.json) and is the site's own grouping, not an official one
+- **Pledge quiz (`#/quiz`):** guess the status of 10 pledges sampled across fulfilled, partly fulfilled and not fulfilled (the sample is not proportional, and the quiz says so), see the sourced answer after each one, then share the score
+- **Saved list:** star any item or pledge; the list lives only in the visitor's browser and can be shared as a link (`#/saved/<ids>`) that the recipient can import
+- **What's new since your last visit:** the browser remembers which items and statuses it saw last time and flags new items and status changes with a badge and a summary on the home card
+- **Swipe** left or right on the island panel (mobile) to move to the previous or next island
+- **Deep links** to any island, item, view or pledge filter, e.g. `#/transport`, `#/housing/housing-happy`, `#/pledges/p22-media-01`, `#/pledges?status=not_done&cat=勞工` or `#/ledger`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
 
 As of that date, no complete re-election platform had been published, so the re-election pledge category is empty. (The 2022 pledge tracker is separate.) The site states this on its home screen.
@@ -66,7 +72,7 @@ As of that date, no complete re-election platform had been published, so the re-
 
 ### Tests and checks
 
-- `npm test` opens the site in headless Chromium (desktop and mobile), checks that the 3D scene starts, deep links, views, layers, tour and stories work, and that the console has no errors. The deploy workflow runs it before every deploy.
+- `npm test` opens the site in headless Chromium (desktop and mobile), checks that the 3D scene starts, deep links, views, layers, tour and stories, search, saved list, "I am…", pledge filters in the URL, the quiz and the what's-new notice work, and that the console has no errors. The deploy workflow runs it before every deploy.
 - `npm run build:share` generates the share pages and preview images into `dist/` (run automatically on deploy).
 - `.github/workflows/linkcheck.yml` checks every source link each Monday and opens an issue if any link is dead.
 

@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "note": "依各項目內容裡寫明的適用對象歸類（例如「育有 12 歲以下子女」「未滿 40 歲」），只收直接相關者；這是本站的整理，不是市府的分類。補助的明細與調整前後請看民生帳本。"
+  },
+  "personas": [
+    { "id": "pregnancy", "label": "準爸媽", "emoji": "🤰", "ledger": "pregnancy", "pledgeCats": ["育兒"],
+      "items": ["family-birth", "family-new-measures", "family-lbw", "housing-happy"] },
+    { "id": "toddler", "label": "幼兒家長", "emoji": "👶", "ledger": "toddler", "pledgeCats": ["育兒"],
+      "items": ["family-birth", "family-worktime", "family-new-measures", "housing-happy", "housing-rent-subsidy"] },
+    { "id": "student", "label": "學生與家長", "emoji": "🎒", "ledger": "student", "pledgeCats": ["教育"],
+      "items": ["family-lunch", "family-milk", "family-food-safety", "family-ai-edu"] },
+    { "id": "youth", "label": "青年", "emoji": "🧑‍💻", "ledger": "youth", "pledgeCats": ["青年", "居住"],
+      "items": ["industry-youth", "industry-startup", "housing-rent-subsidy", "housing-friendly", "housing-social", "housing-happy"] },
+    { "id": "adult", "label": "上班族與勞工", "emoji": "💼", "ledger": "adult", "pledgeCats": ["勞工"],
+      "items": ["family-worktime", "housing-rent-subsidy", "transport-youbike", "transport-bus"] },
+    { "id": "senior", "label": "長輩", "emoji": "👵", "ledger": "senior", "pledgeCats": ["長照"],
+      "items": ["care-senior-card", "care-senior-points", "care-ltc", "care-ambulance", "care-hospital-ai", "housing-friendly"] },
+    { "id": "disability", "label": "身心障礙者", "emoji": "♿", "ledger": "disability", "pledgeCats": [],
+      "items": ["care-senior-card"] },
+    { "id": "indigenous", "label": "原住民", "emoji": "🌾", "ledger": "indigenous", "pledgeCats": [],
+      "items": [] },
+    { "id": "lowincome", "label": "經濟弱勢家庭", "emoji": "🏠", "ledger": "lowincome", "pledgeCats": [],
+      "items": ["housing-social", "housing-happy", "industry-youth"] },
+    { "id": "singleparent", "label": "單親與多胎家庭", "emoji": "👨‍👧‍👦", "ledger": "singleparent", "pledgeCats": ["育兒"],
+      "items": ["family-birth", "housing-happy", "housing-rent-subsidy"] },
+    { "id": "commuters", "label": "通勤族", "emoji": "🚇", "ledger": "commuters", "pledgeCats": ["交通"],
+      "items": ["transport-xinyi-east", "transport-wanda", "transport-circular-ns", "transport-circular-east", "transport-minsheng", "transport-youbike", "transport-pedestrian", "transport-bus", "transport-autonomous", "development-nangang-bus"] },
+    { "id": "pets", "label": "寵物飼主", "emoji": "🐕", "ledger": "pets", "pledgeCats": ["動物保護"],
+      "items": [] }
+  ]
+}

@@ -93,7 +93,53 @@ for (const [name, opts] of [
   await page.click('[data-view="island"]');
   await page.waitForTimeout(800);
 
+  // ---------- 互動加值 ----------
+  // 全站搜尋：/ 叫出，跨資料類型都找得到
+  await page.keyboard.press('/');
+  await page.waitForSelector('#finder[open]', { timeout: 3000 });
+  await page.fill('#finder-input', '巨蛋');
+  await page.waitForFunction(() => document.querySelectorAll('#finder-results .fd-row').length > 0, null, { timeout: 8000 });
+  const kinds = await page.$$eval('#finder-results .fd-group', (e) => e.map((x) => x.textContent));
+  check(kinds.includes('施政') && kinds.includes('市長接力'), `${name}: 全站搜尋跨施政與市長接力（${kinds.join('、')}）`);
+  await page.keyboard.press('Escape');
+  // 收藏：按下後計數出現、重新整理後還在
+  await page.evaluate(() => document.querySelector('#list-view .fav-btn').click());
+  check(await page.$eval('#saved-count', (e) => e.textContent) === '1', `${name}: 收藏後計數為 1`);
+  // 我是誰
+  await page.evaluate(() => { location.hash = '#/who/commuters'; });
+  await page.waitForFunction(() => !document.querySelector('#who-bar').hidden, null, { timeout: 5000 });
+  check(/通勤族/.test(await page.$eval('#who-bar', (e) => e.textContent)), `${name}: 我是誰身分列出現`);
+  await page.evaluate(() => document.querySelector('#who-bar [data-whogo="clear"]').click());
+  // 政見篩選寫進網址、可由網址帶入
+  await page.evaluate(() => { location.hash = `#/pledges?status=not_done`; });
+  await page.waitForTimeout(800);
+  const nd = JSON.parse(await readFile('data/pledges2022.json', 'utf8')).items.filter((p) => p.status === 'not_done').length;
+  check(await page.$$eval('.pl:not([hidden])', (e) => e.length) === nd, `${name}: 網址帶入政見篩選（未兌現 ${nd} 條）`);
+  // 猜猜看
+  await page.evaluate(() => { location.hash = '#/quiz'; });
+  await page.waitForFunction(() => document.querySelectorAll('#quiz [data-ans]').length === 3, null, { timeout: 5000 });
+  await page.evaluate(() => document.querySelector('#quiz [data-ans]').click());
+  check(await page.$('#quiz .qz-reveal .src, #quiz .qz-reveal') !== null, `${name}: 猜猜看作答後揭曉`);
+  await page.keyboard.press('Escape');
+
   check(errors.length === 0, `${name}: 主控台零錯誤${errors.length ? `\n    ${errors.slice(0, 5).join('\n    ')}` : ''}`);
+  await ctx.close();
+}
+
+// 上次造訪後的新內容：模擬上一次造訪只看過一項，應提示新增
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
+  await ctx.addInitScript(() => {
+    if (!sessionStorage.getItem('cwpi:seeded')) {
+      sessionStorage.setItem('cwpi:seeded', '1');
+      localStorage.setItem('cwpi:visit', JSON.stringify({ seen: { 'i:transport-xinyi-east': 'in_progress' }, seenDate: '2026-10-01' }));
+    }
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/`, { waitUntil: 'load' });
+  await page.waitForFunction(() => !document.querySelector('#hero-fresh').hidden, null, { timeout: 15000 }).catch(() => {});
+  const txt = await page.$eval('#hero-fresh', (e) => (e.hidden ? '' : e.textContent));
+  check(/新增/.test(txt) && /狀態更新 1 項/.test(txt), `fresh: 提示上次造訪後的新內容（${txt.replace(/\s+/g, ' ').trim().slice(0, 40)}）`);
   await ctx.close();
 }
 

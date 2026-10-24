@@ -75,7 +75,7 @@ export function cardHTML(p, itemTitle = () => null, { embed = false } = {}) {
     ${ev ? `<details class="pl-more"><summary>查證依據（${p.evidence.length}）</summary><ul>${ev}</ul></details>` : ''}
     ${cr ? `<details class="pl-more pl-crit"><summary>爭議與批評（${p.critical.length}）</summary><ul>${cr}</ul></details>` : ''}
     ${(p.sources || []).length ? `<div class="sources">${p.sources.map(srcHTML).join('')}</div>` : ''}
-    ${embed ? '' : `<div class="pl-tools"><button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button><button class="copy-btn" data-copy="${esc(embedCode(p.id))}" data-done="已複製嵌入語法">嵌入</button><a class="report-btn" href="${esc(reportUrl('政見', p.id, p.pledge, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a></div>`}
+    ${embed ? '' : `<div class="pl-tools"><button class="fav-btn" data-fav="p:${esc(p.id)}" aria-pressed="false">收藏</button><button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button><button class="copy-btn" data-copy="${esc(embedCode(p.id))}" data-done="已複製嵌入語法">嵌入</button><a class="report-btn" href="${esc(reportUrl('政見', p.id, p.pledge, st.label))}" target="_blank" rel="noopener noreferrer">回報錯誤</a></div>`}
     <div class="pl-links">${related}<a class="pl-origin" href="${esc(safeUrl(p.origin_url))}" target="_blank" rel="noopener noreferrer">政見出處：${esc(p.origin)} ↗</a></div>
   </article>`;
 }
@@ -125,6 +125,11 @@ export function renderPledges(root, data, hooks) {
 
   const filters = { status: '', cat: '' };
   const shown = root.querySelector('.pl-shown');
+  // 篩選狀態可由網址帶入，也會回報給外部寫回網址（方便直接分享「勞工＋未兌現」這種畫面）
+  function syncChips() {
+    root.querySelectorAll('.pl-chips').forEach((box) => box.querySelectorAll('.chip').forEach((c) =>
+      c.setAttribute('aria-pressed', String(c.dataset.v === filters[box.dataset.kind]))));
+  }
   function apply() {
     let n = 0;
     root.querySelectorAll('.pl').forEach((el) => {
@@ -132,13 +137,17 @@ export function renderPledges(root, data, hooks) {
       el.hidden = !ok;
       if (ok) n++;
     });
-    shown.textContent = n === total ? '' : `顯示 ${n} 條`;
+    shown.innerHTML = n === total ? '' : `顯示 ${n} 條<button class="copy-btn pl-copy-filter" type="button">複製這個篩選的連結</button>`;
+    const link = shown.querySelector('.pl-copy-filter');
+    if (link) link.dataset.copy = location.href;
+    if (link) link.dataset.done = '已複製篩選連結';
   }
   root.querySelectorAll('.pl-chips').forEach((box) => box.addEventListener('click', (e) => {
     const b = e.target.closest('.chip');
     if (!b) return;
     filters[box.dataset.kind] = b.dataset.v;
-    box.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
+    syncChips();
+    hooks.onFilter?.({ ...filters });
     apply();
   }));
   root.addEventListener('click', (e) => {
@@ -146,6 +155,14 @@ export function renderPledges(root, data, hooks) {
     if (go) hooks.onOpen(go.dataset.theme, go.dataset.item || undefined);
   });
   apply();
+  return {
+    setFilters(f = {}) {
+      filters.status = PLEDGE_STATUS[f.status] ? f.status : '';
+      filters.cat = cats.includes(f.cat) ? f.cat : '';
+      syncChips();
+      apply();
+    },
+  };
 }
 
 export function focusPledge(root, id) {

@@ -1705,17 +1705,19 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   beaconList.forEach((b) => { b.userData.t = toTime(b.userData.item.date); });
 
   let timeCut = null; // null = 不依時間篩選
+  let itemSet = null; // 「我是誰」篩選
   function applyBeaconFilters({ flashNew = false } = {}) {
     const appeared = [];
     islands.forEach((isle) => {
       let shown = 0;
       isle.beacons.forEach((b) => {
-        const ok = (!statusFilter || b.userData.item.status === statusFilter) && (timeCut === null || b.userData.t <= timeCut);
+        const ok = (!statusFilter || b.userData.item.status === statusFilter) && (timeCut === null || b.userData.t <= timeCut)
+          && (!itemSet || itemSet.has(b.userData.item.id));
         if (ok && !b.userData.shown && flashNew) { b.userData.flash = 1; appeared.push(b.userData.item); }
         b.userData.shown = ok;
         if (ok) shown++;
       });
-      const filtering = !!statusFilter || timeCut !== null;
+      const filtering = !!statusFilter || timeCut !== null || !!itemSet;
       if (pledge.on) return;
       isle.label.classList.toggle('is-dim', filtering && shown === 0);
       const small = isle.label.querySelector('small');
@@ -1725,6 +1727,11 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   }
   function setStatusFilter(s) {
     statusFilter = s;
+    applyBeaconFilters();
+  }
+  // 「我是誰」：只亮出與某個身分直接相關的項目；null = 全部
+  function setItemSet(set) {
+    itemSet = set && set.size ? set : (set ? new Set(['__none__']) : null);
     applyBeaconFilters();
   }
   function setTimeCut(t) {
@@ -1960,7 +1967,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   inset.x = inset.tx; // 開場直接到位，不要滑動
 
   return {
-    focusTheme, resetView, setStatusFilter, setTimeCut, refreshLayout: setInset,
+    focusTheme, resetView, setStatusFilter, setItemSet, setTimeCut, refreshLayout: setInset,
     showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
     setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
