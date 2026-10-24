@@ -902,17 +902,35 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const c = new THREE.Group();
     c.position.y = TOP;
     group.add(c);
-    const steps = [[2.2, 0.5], [1.7, 0.5], [1.35, 3.2], [1.15, 1.6], [0.9, 1.4], [0.6, 1.0]];
+    // 臺北 101：下方往上收的塔基，上面疊 8 節「上寬下窄」的竹節（每節 8 層樓），再接頂部與塔尖
+    // 比例約 1 單位 ≈ 50 公尺；方形斷面用 4 邊圓柱轉 45° 做出可外擴的方台
+    const glass101 = mat('#5c9a9c', { roughness: 0.25, metalness: 0.35 });
+    const sq = (rTop, rBot, h, material, yy) => {
+      const m = cyl(rTop, rBot, h, 4, material, 0, yy, 0);
+      m.rotation.y = Math.PI / 4;
+      return m;
+    };
     let y = 0;
-    steps.forEach(([w, h], i) => {
-      const m = box(w, h, w, i === 0 ? M.concrete : M.glass, 0, y, 0);
-      c.add(m);
-      if (i >= 2) for (let k = 1; k < h / 0.4; k++) c.add(box(w + 0.02, 0.04, w + 0.02, windowMat, 0, y + k * 0.4, 0));
-      y += h;
-    });
-    c.add(cyl(0.04, 0.08, 1.4, 5, M.concrete, 0, y, 0));
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), glow('#ffcf6b', 0.3));
-    tip.position.y = y + 1.45;
+    c.add(box(2.3, 0.34, 1.7, M.concrete, 0, 0, 0.15)); // 裙樓（購物中心）
+    y += 0.34;
+    c.add(sq(0.8, 1.02, 2.0, glass101, y)); // 塔基：1–26 樓，往上收
+    for (let k = 1; k < 5; k++) c.add(sq(0.8 + (1.02 - 0.8) * (1 - k / 5) + 0.015, 0.8 + (1.02 - 0.8) * (1 - k / 5) + 0.015, 0.03, windowMat, y + k * 0.4));
+    y += 2.0;
+    c.add(sq(0.86, 0.86, 0.08, M.concrete, y)); // 塔基頂的平台
+    y += 0.08;
+    for (let k = 0; k < 8; k++) { // 8 節竹節：27–90 樓，每節上寬下窄
+      c.add(sq(0.95, 0.72, 0.6, glass101, y));
+      c.add(sq(0.84 + 0.015, 0.84 + 0.015, 0.03, windowMat, y + 0.3));
+      c.add(sq(0.97, 0.97, 0.035, windowMat, y + 0.6)); // 每節頂緣的燈帶（夜晚逐節亮起）
+      y += 0.635;
+    }
+    c.add(sq(0.62, 0.7, 0.5, glass101, y)); // 91–101 樓
+    y += 0.5;
+    c.add(sq(0.4, 0.46, 0.28, M.concrete, y));
+    y += 0.28;
+    c.add(cyl(0.025, 0.07, 1.25, 6, M.concrete, 0, y, 0)); // 塔尖
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), glow('#ffcf6b', 0.3));
+    tip.position.y = y + 1.3;
     c.add(tip);
     // 廣場與步道
     const plaza = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.7, 0.05, 6), M.pave);
