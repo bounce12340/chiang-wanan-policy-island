@@ -58,8 +58,18 @@ for (const [name, opts] of [
   await page.locator('[data-layer="pledges"]').click({ force: true });
   await page.waitForTimeout(600);
   check(await page.evaluate(() => document.body.classList.contains('pledge-mode') && window.__dbg().pledges.length > 0), `${name}: 2022 承諾圖層可切換`);
+  await page.locator('[data-layer="links"]').click({ force: true });
+  await page.waitForTimeout(800);
+  check(await page.$$eval('.link-pill', (e) => e.filter((x) => getComputedStyle(x).display !== 'none').length) >= 8, `${name}: 政策關係弧線可顯示`);
+  await page.locator('[data-link="0"]').click({ force: true });
+  check(await page.$eval('#pledge-pop', (e) => !e.hidden && e.querySelectorAll('.src').length > 0), `${name}: 關係說明附來源`);
   await page.locator('[data-layer="items"]').click({ force: true });
   check(await page.evaluate(() => window.__dbg().peopleCount >= 200), `${name}: 島上居民 200 人以上`);
+
+  await page.goto(`${BASE}/?debug#/story/parent`, { waitUntil: 'load' });
+  await page.waitForFunction(() => document.querySelector('#loading')?.classList.contains('is-done'), null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  check(await page.$eval('#tour', (t) => !t.hidden && /新手爸媽/.test(t.textContent)), `${name}: 市民的一天可啟動`);
 
   await page.goto(`${BASE}/#/housing`, { waitUntil: 'load' });
   await page.waitForFunction(() => document.querySelector('#loading')?.classList.contains('is-done'), null, { timeout: 30000 });

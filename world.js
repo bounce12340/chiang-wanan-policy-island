@@ -1217,6 +1217,80 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     });
     if (!pledge.on) applyBeaconFilters();
   }
+  // ---------- 政策關係：兩項政策之間的弧線（只收來源明說的關聯） ----------
+  const links = { on: false, arcs: [], group: new THREE.Group(), flow: null };
+  links.group.visible = false;
+  scene.add(links.group);
+  function beaconWorld(themeId, itemId) {
+    const isle = islands.get(themeId);
+    const b = isle?.beacons.find((x) => x.userData.item.id === itemId);
+    if (!b) return null;
+    isle.root.updateMatrixWorld(true);
+    return b.localToWorld(new THREE.Vector3(0, 1.5, 0)).setY(TOP + 1.5);
+  }
+  function setLinks(list, onPick) {
+    if (links.arcs.length) return;
+    const pairCount = new Map();
+    list.forEach((l, k) => {
+      const a = beaconWorld(l.from.theme, l.from.item);
+      const b = beaconWorld(l.to.theme, l.to.item);
+      if (!a || !b) return;
+      const key = [l.from.theme, l.to.theme].sort().join('|');
+      const n = pairCount.get(key) || 0;
+      pairCount.set(key, n + 1);
+      const mid = a.clone().lerp(b, 0.5);
+      const side = new THREE.Vector3(b.z - a.z, 0, a.x - b.x).normalize().multiplyScalar(n * 2.2);
+      // 弧高依距離與序號錯開，讓標籤在鳥瞰時不要疊在一起
+      mid.add(side).setY(TOP + 4 + a.distanceTo(b) * 0.75 + (k % 4) * 1.6 + n * 1.4);
+      const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+      const geo = new THREE.TubeGeometry(curve, 48, 0.12, 6, false);
+      // 由起點島的顏色漸變到終點島的顏色
+      const ca = new THREE.Color(islands.get(l.from.theme).theme.color), cb = new THREE.Color(islands.get(l.to.theme).theme.color);
+      const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), tmpC = new THREE.Color();
+      const segs = 48, radial = 6;
+      for (let i = 0; i < pos.count; i++) {
+        const u = Math.floor(i / (radial + 1)) / segs;
+        tmpC.copy(ca).lerp(cb, u).toArray(col, i * 3);
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const tube = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 }));
+      links.group.add(tube);
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'link-pill';
+      el.textContent = String(k + 1); // 鳥瞰時只顯示編號，名稱列在圖層面板，避免標籤互相遮擋
+      el.title = l.label;
+      el.setAttribute('aria-label', `${k + 1}. ${l.label}`);
+      el.addEventListener('click', (e) => { e.stopPropagation(); onPick?.(k); });
+      const pill = new CSS2DObject(el);
+      pill.position.copy(curve.getPoint(0.5));
+      pill.visible = false;
+      links.group.add(pill);
+      links.arcs.push({ curve, tube, el, pill, phase: k * 0.37 });
+    });
+    // 沿弧線流動的小光點：全部共用一個 InstancedMesh
+    links.flow = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' }), links.arcs.length * 2);
+    links.flow.frustumCulled = false;
+    links.group.add(links.flow);
+  }
+  function setLinkMode(on) {
+    links.on = !!on;
+    links.group.visible = links.on;
+    links.arcs.forEach((a) => { a.pill.visible = links.on; }); // CSS2D 標籤只看自己的 visible
+  }
+  const flowM = new THREE.Matrix4();
+  function syncLinks(elapsed) {
+    if (!links.on || !links.flow) return;
+    links.arcs.forEach((a, i) => {
+      for (let j = 0; j < 2; j++) {
+        const u = ((elapsed * 0.18 + a.phase + j * 0.5) % 1);
+        flowM.makeTranslation(a.curve.getPoint(u));
+        links.flow.setMatrixAt(i * 2 + j, flowM);
+      }
+    });
+    links.flow.instanceMatrix.needsUpdate = true;
+  }
+
   function syncPledges(elapsed) {
     if (!pledge.on || !pledge.poles) return;
     // 鏡頭拉遠時把承諾牌放大，鳥瞰也看得出顏色
@@ -1337,6 +1411,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       if (small) {
         if (shown(hero)) B = rect('hero').top;
         else if (shown(legend)) B = rect('legend').top;
+        const lay = document.getElementById('layer');
+        if (!shown(hero) && shown(lay)) B = Math.min(B, rect('layer').top);
       } else {
         if (shown(hero)) L = rect('hero').right;
         if (shown(idx)) R = rect('index').left;
@@ -1603,6 +1679,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     updateBubble();
     syncBeacons();
     syncPledges(elapsed);
+    syncLinks(elapsed);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -1657,6 +1734,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     focusTheme, resetView, setStatusFilter, setTimeCut, refreshLayout: setInset,
     showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
-    setPledges, setPledgeMode, getPledgeMode: () => pledge.on,
+    setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode,
   };
 }

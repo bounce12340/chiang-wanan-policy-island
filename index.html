@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="./styles.css">
   <script type="importmap">
     { "imports": {
-        "three": "./vendor/three-lite.js?v=7168b4e42a",
-        "three/addons/controls/OrbitControls.js": "./vendor/three-lite.js?v=7168b4e42a",
-        "three/addons/renderers/CSS2DRenderer.js": "./vendor/three-lite.js?v=7168b4e42a",
-        "three/addons/utils/BufferGeometryUtils.js": "./vendor/three-lite.js?v=7168b4e42a"
+        "three": "./vendor/three-lite.js?v=29642ac749",
+        "three/addons/controls/OrbitControls.js": "./vendor/three-lite.js?v=29642ac749",
+        "three/addons/renderers/CSS2DRenderer.js": "./vendor/three-lite.js?v=29642ac749",
+        "three/addons/utils/BufferGeometryUtils.js": "./vendor/three-lite.js?v=29642ac749"
     } }
   </script>
 </head>
@@ -74,6 +74,7 @@
       <button class="cta cta-2" id="btn-tour">▶ <span class="hide-sm">70 秒</span>導覽</button>
       <button class="cta cta-2" id="btn-pledges">2022 政見兌現</button>
     </div>
+    <p class="hero-stories" id="hero-stories"><span>市民的一天：</span><button data-story="parent">👶 新手爸媽</button><button data-story="commuter">💼 通勤族</button><button data-story="senior">👵 長輩</button></p>
   </section>
 
   <section class="timebar" id="timebar" aria-label="任期時間軸">
@@ -101,6 +102,7 @@
     <div class="layer-seg" role="group" aria-label="圖層">
       <button data-layer="items" aria-pressed="true">任內施政</button>
       <button data-layer="pledges" aria-pressed="false">2022 承諾</button>
+      <button data-layer="links" aria-pressed="false">政策關係</button>
     </div>
     <div class="layer-legend" id="layer-legend" hidden></div>
   </aside>

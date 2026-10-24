@@ -1,0 +1,242 @@
+{
+ "meta": {
+  "updated": "2026-10-24",
+  "note": "只收錄來源明確寫出兩項政策關聯者；每條附來源。"
+ },
+ "links": [
+  {
+   "from": {
+    "theme": "housing",
+    "item": "housing-happy"
+   },
+   "to": {
+    "theme": "family",
+    "item": "family-birth"
+   },
+   "label": "鼓勵青年婚育",
+   "explain": "都發局說明幸福住宅「為了鼓勵青年婚育」，提供婚後 2 年內或育有 0–6 歲子女的家庭承租；市府並以社宅家庭粗出生率高於同行政區為據，期望新婚與育兒家庭「勇敢生育、安居臺北」。",
+   "sources": [
+    {
+     "title": "北市推「幸福住宅」專案，盼鼓勵青年婚育，留「住」臺北",
+     "publisher": "臺北市都市發展局",
+     "url": "https://udd.gov.taipei/events/fhqekzq-20370",
+     "published": "2024-09-19"
+    }
+   ],
+   "id": "housing-happy--family-birth"
+  },
+  {
+   "from": {
+    "theme": "housing",
+    "item": "housing-social"
+   },
+   "to": {
+    "theme": "family",
+    "item": "family-birth"
+   },
+   "label": "催生新政社宅加籤",
+   "explain": "市府 2023-03-21 為因應少子女化推出 5 項「催生」新政，其中育有 2 名以上 0–6 歲子女的家庭申請社宅採加籤制、入住機會提高 2 倍，社宅育兒家庭另可依子女數每名每月加碼 1,000 元租金補助。",
+   "sources": [
+    {
+     "title": "蔣萬安推「催生」新政　2胎加倍抽社宅、私幼最高補5.2萬",
+     "publisher": "NOWnews 今日新聞",
+     "url": "https://www.nownews.com/news/6087441",
+     "published": "2023-03-21"
+    }
+   ],
+   "id": "housing-social--family-birth"
+  },
+  {
+   "from": {
+    "theme": "industry",
+    "item": "industry-nvidia-sign"
+   },
+   "to": {
+    "theme": "family",
+    "item": "family-ai-edu"
+   },
+   "label": "北士科設AI教育中心",
+   "explain": "市府 2026-07-04 公布 4 年 92 億元的 AI 教育政策，報導指「因應輝達海外總部落腳，市府將在北士科設立台北AI教育中心」。",
+   "sources": [
+    {
+     "title": "浪潮來襲 蔣萬安：4年92億 推AI教育",
+     "publisher": "聯合報",
+     "url": "https://udn.com/news/story/7323/9605903",
+     "published": "2026-07-04"
+    }
+   ],
+   "id": "industry-nvidia-sign--family-ai-edu"
+  },
+  {
+   "from": {
+    "theme": "industry",
+    "item": "industry-nvidia-sign"
+   },
+   "to": {
+    "theme": "development",
+    "item": "development-songshan"
+   },
+   "label": "輝達後續用地需求",
+   "explain": "市長 2026-10-08 宣布松山機場遷移、打造臺北 AI 園區的構想，稱這是爭取輝達落腳臺北之後的計畫；次日並轉述黃仁勳認為北士科 T17、T18 對輝達未來在臺北的發展「也是不夠的」。",
+   "sources": [
+    {
+     "title": "蔣萬安宣布規劃松山機場遷移　打造台北AI園區",
+     "publisher": "中央社",
+     "url": "https://cna.com.tw/news/aipl/202610080124.aspx",
+     "published": "2026-10-08"
+    },
+    {
+     "title": "規畫松機遷移 蔣萬安曝：黃仁勳說北士科T17、T18對輝達發展還不夠",
+     "publisher": "聯合報",
+     "url": "https://udn.com/news/story/6656/9804825",
+     "published": "2026-10-09"
+    }
+   ],
+   "id": "industry-nvidia-sign--development-songshan"
+  },
+  {
+   "from": {
+    "theme": "development",
+    "item": "development-songshan"
+   },
+   "to": {
+    "theme": "housing",
+    "item": "housing-renewal"
+   },
+   "label": "解除航高限制利都更",
+   "explain": "市府構想稱，解除松山機場航高限制後，可釋放臺北、新北、基隆、桃園約 570 公頃受航高影響的都市更新劃定地區；此為市府提案說法，遷移與否仍待中央評估。",
+   "sources": [
+    {
+     "title": "蔣萬安喊松山機場遷移做台北AI園區！選舉就談松機遷移，究竟搬到哪？沈伯洋：這10年不知蔣做哪些準備",
+     "publisher": "今周刊",
+     "url": "https://www.businesstoday.com.tw/article/category/183027/post/202610080015/",
+     "published": "2026-10-08"
+    },
+    {
+     "title": "蔣萬安宣布規劃松山機場遷移　打造台北AI園區",
+     "publisher": "中央社",
+     "url": "https://cna.com.tw/news/aipl/202610080124.aspx",
+     "published": "2026-10-08"
+    }
+   ],
+   "id": "development-songshan--housing-renewal"
+  },
+  {
+   "from": {
+    "theme": "development",
+    "item": "development-songshan"
+   },
+   "to": {
+    "theme": "industry",
+    "item": "industry-corridor"
+   },
+   "label": "納入首都科技廊帶",
+   "explain": "市長在提出松機遷移構想時，同步提出「首都科技廊帶」概念，要把北士科、台北 AI 園區、內科及南港軟體園區串連，再向外延伸至鄰近縣市。",
+   "sources": [
+    {
+     "title": "蔣萬安喊松山機場遷移做台北AI園區！選舉就談松機遷移，究竟搬到哪？沈伯洋：這10年不知蔣做哪些準備",
+     "publisher": "今周刊",
+     "url": "https://www.businesstoday.com.tw/article/category/183027/post/202610080015/",
+     "published": "2026-10-08"
+    }
+   ],
+   "id": "development-songshan--industry-corridor"
+  },
+  {
+   "from": {
+    "theme": "safety",
+    "item": "safety-building"
+   },
+   "to": {
+    "theme": "housing",
+    "item": "housing-renewal"
+   },
+   "label": "防災導向加速都更",
+   "explain": "市府 2023-10-03 推出防災型都更專案，針對海砂屋、耐震力不足等老舊建物，「為了加速危老都更，避免發生公安意外」，給予最高 100% 容積獎勵。",
+   "sources": [
+    {
+     "title": "北市推防災型都更專案 危老容積獎勵最高100%",
+     "publisher": "公視新聞網",
+     "url": "https://news.pts.org.tw/article/659900",
+     "published": "2023-10-03"
+    }
+   ],
+   "id": "safety-building--housing-renewal"
+  },
+  {
+   "from": {
+    "theme": "family",
+    "item": "family-milk"
+   },
+   "to": {
+    "theme": "culture",
+    "item": "culture-lky"
+   },
+   "label": "獲評審團點名肯定",
+   "explain": "新加坡市區重建局公布的評審意見中，點名臺北的「Fresh Milk for Every Child」（生生喝鮮奶）以公私協力串連學校、家庭與在地商家；市長領獎時也提到評審實地看到學童用學生證在超商兌領鮮奶。",
+   "sources": [
+    {
+     "title": "London conferred Lee Kuan Yew World City Prize 2026",
+     "publisher": "新加坡市區重建局（URA）",
+     "url": "https://www.ura.gov.sg/Corporate/Media-Room/Media-Releases/pr26-20",
+     "published": "2026-03-24"
+    },
+    {
+     "title": "全台唯一！獲頒李光耀世界城市獎　蔣萬安：榮耀屬於每一位市民",
+     "publisher": "NOWnews 今日新聞",
+     "url": "https://www.nownews.com/news/6847012",
+     "published": "2026-06-15"
+    }
+   ],
+   "id": "family-milk--culture-lky"
+  },
+  {
+   "from": {
+    "theme": "transport",
+    "item": "transport-youbike"
+   },
+   "to": {
+    "theme": "environment",
+    "item": "environment-carbon"
+   },
+   "label": "落實2030減碳40%",
+   "explain": "市長 2024-02-27 表示，恢復 YouBike 前 30 分鐘免費是「為落實2030減碳40%及綠運輸使用率70%目標」，鼓勵汽機車族改騎 YouBike；2030 年減碳 40% 也是市府淨零路徑的階段目標。",
+   "sources": [
+    {
+     "title": "北市YouBike前30分鐘免費28日起實施 轉乘公車捷運不再優惠",
+     "publisher": "中央社",
+     "url": "https://www.cna.com.tw/news/aloc/202402270092.aspx",
+     "published": "2024-02-27"
+    },
+    {
+     "title": "北市YouBike前30分鐘免費回來了！　2/28上路、車輛也將擴增",
+     "publisher": "鏡週刊",
+     "url": "https://www.mirrormedia.mg/story/20240226edi017",
+     "published": "2024-02-26"
+    }
+   ],
+   "id": "transport-youbike--environment-carbon"
+  },
+  {
+   "from": {
+    "theme": "care",
+    "item": "care-senior-card"
+   },
+   "to": {
+    "theme": "transport",
+    "item": "transport-youbike"
+   },
+   "label": "敬老卡可付YouBike",
+   "explain": "敬老愛心卡點數可在臺北市境內租借 YouBike 2.0 時支付，長者同樣適用前 30 分鐘免費。",
+   "sources": [
+    {
+     "title": "台北市65歲↑衝破58萬人！2026敬老卡升級 擴大補助一次看",
+     "publisher": "TVBS 新聞網",
+     "url": "https://news.tvbs.com.tw/life/3195658",
+     "published": "2026-05-05"
+    }
+   ],
+   "id": "care-senior-card--transport-youbike"
+  }
+ ]
+}

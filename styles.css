@@ -599,3 +599,31 @@ body.pledge-mode .timebar, body.pledge-mode .legend { display: none !important; 
 .copy-btn:hover, .report-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
 .item-actions { gap: 6px; }
 .pl-countdown { color: var(--ink); }
+
+/* ---------- 政策關係 ---------- */
+body.link-mode .timebar, body.link-mode .legend { display: none !important; }
+.link-pill {
+  border: 2px solid var(--paper); background: var(--ink); color: var(--paper); font: 700 12px/1 var(--font-num);
+  width: 24px; height: 24px; padding: 0; display: grid; place-items: center; border-radius: 50%; box-shadow: 0 4px 14px rgba(20,33,61,.18); cursor: pointer; white-space: nowrap; pointer-events: auto;
+}
+.link-pill:hover { transform: scale(1.2); }
+.link-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 2px; max-height: 38vh; overflow: auto; width: 100%; }
+.link-list button { display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none; padding: 5px 4px; border-radius: 8px; color: var(--ink); font-size: 12.5px; font-weight: 700; }
+.link-list button:hover { background: var(--paper-2); }
+.link-list b { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; font: 700 11px/1 var(--font-num); }
+.link-list small { display: block; font-weight: 500; color: var(--ink-soft); font-size: 11.5px; }
+.pop-link { margin: 4px 0 8px; font-size: 13.5px; font-weight: 700; line-height: 1.5; }
+.pop-link i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 6px; }
+.pop-link span { color: var(--ink-soft); margin-left: 3px; }
+.pledge-pop .sources { margin-top: 8px; }
+@media (max-width: 760px) { .link-pill { width: 22px; height: 22px; font-size: 11px; } .layer-seg button { padding: 7px 6px; font-size: 13px; } .link-list { max-height: 24vh; } }
+.hero-stories { margin: 10px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.hero-stories button, .tour-stories button { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; }
+.tour-stories { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px !important; margin-top: 8px !important; }
+@media (max-width: 760px) {
+  .hero-note { display: none; }
+  .hero-stories { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-top: 8px; }
+  .hero-stories span { flex: none; }
+  .hero-stories button { flex: none; }
+}
+@media (max-width: 760px) { .hero-stories button { padding: 4px 8px; font-size: 12px; } }

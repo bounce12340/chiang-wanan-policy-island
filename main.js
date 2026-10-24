@@ -103,7 +103,7 @@ async function boot() {
   loadPledges().then((pd) => {
     const stat = document.createElement('div');
     stat.className = 'stat stat-pledge';
-    stat.innerHTML = `<b>${pd.items.length}</b><span>條 2022 政見逐條查證</span>`;
+    stat.innerHTML = `<b>${pd.items.length}</b><span>2022 政見查證</span>`;
     $('#hero-stats').append(stat);
   }).catch((err) => console.warn('政見資料載入失敗', err));
   $('#btn-pledges').addEventListener('click', () => { setView('pledges'); location.hash = '#/pledges'; });
@@ -618,17 +618,64 @@ async function boot() {
       history.replaceState(null, '', `#/pledges/${id}`);
     }
   });
+  // ---------- 政策關係：只收來源明說的關聯 ----------
+  let linkData = null;
+  function itemRef(ref) {
+    const t = byId.get(ref.theme);
+    return { theme: t, item: t?.items.find((i) => i.id === ref.item) };
+  }
+  function showLinkPop(k) {
+    const l = linkData?.links[k];
+    if (!l) return;
+    const a = itemRef(l.from), b = itemRef(l.to);
+    pop.innerHTML = `<button class="pop-close" aria-label="關閉">×</button>
+      <p class="pop-kicker">政策關係・${esc(a.theme.name)} → ${esc(b.theme.name)}</p>
+      <p class="pop-quote">${esc(l.label)}</p>
+      <p class="pop-link"><i style="background:${a.theme.color}"></i>${esc(a.item.title)}<br><span>↓</span><br><i style="background:${b.theme.color}"></i>${esc(b.item.title)}</p>
+      <p class="pop-sum">${esc(l.explain)}</p>
+      <div class="sources">${l.sources.map((s) => `<a class="src" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer" title="${esc(s.title || s.url)}">↗ ${esc(sourceLabel(s))}</a>`).join('')}</div>
+      <div class="pop-actions"><button class="cta" data-go-theme="${esc(l.from.theme)}" data-go-item="${esc(l.from.item)}">看${esc(a.theme.name)}</button><button class="cta cta-2" data-go-theme="${esc(l.to.theme)}" data-go-item="${esc(l.to.item)}">看${esc(b.theme.name)}</button></div>`;
+    pop.hidden = false;
+  }
+  pop.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-go-theme]');
+    if (!g) return;
+    pop.hidden = true;
+    openTheme(g.dataset.goTheme, g.dataset.goItem);
+  });
+  async function ensureLinks() {
+    if (linkData) return;
+    const res = await fetch('./data/links.json', { cache: 'no-cache' });
+    linkData = await res.json();
+    world?.setLinks(linkData.links, (k) => showLinkPop(k));
+  }
+
   const layerBox = $('#layer');
-  function setLayer(mode) {
-    const on = mode === 'pledges';
+  const LEGEND_LINKS = '<small>每條弧線連起兩項有關聯的政策，點編號或清單看說明與來源。只收錄來源明確寫出關聯者。</small>';
+  let pledgeLegend = '';
+  async function setLayer(mode) {
     layerBox.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.layer === mode)));
-    document.body.classList.toggle('pledge-mode', on);
-    $('#layer-legend').hidden = !on;
-    if (on) { stopPlay(); resetTimeline(); hideHero(); } else pop.hidden = true;
-    world?.setPledgeMode(on);
+    document.body.classList.toggle('pledge-mode', mode === 'pledges');
+    document.body.classList.toggle('link-mode', mode === 'links');
+    const leg = $('#layer-legend');
+    leg.hidden = mode === 'items';
+    leg.innerHTML = mode === 'pledges' ? pledgeLegend : mode === 'links' ? LEGEND_LINKS : '';
+    pop.hidden = true;
+    if (mode !== 'items') { stopPlay(); resetTimeline(); hideHero(); }
+    world?.setPledgeMode(mode === 'pledges');
+    if (mode === 'links') { try { await ensureLinks(); } catch (err) { console.warn('關係資料載入失敗', err); } }
+    if (mode === 'links' && linkData) {
+      leg.innerHTML = `<ol class="link-list">${linkData.links.map((l, k) => {
+        const a = byId.get(l.from.theme), b = byId.get(l.to.theme);
+        return `<li><button data-link="${k}"><b>${k + 1}</b><span>${esc(l.label)}<small>${esc(a?.name)} → ${esc(b?.name)}</small></span></button></li>`;
+      }).join('')}</ol>${LEGEND_LINKS}`;
+    }
+    world?.setLinkMode(mode === 'links');
     setTimeout(() => world?.refreshLayout(), 30);
   }
   layerBox.addEventListener('click', (e) => {
+    const lk = e.target.closest('[data-link]');
+    if (lk) { showLinkPop(+lk.dataset.link); return; }
     const b = e.target.closest('[data-layer]');
     if (b) setLayer(b.dataset.layer);
   });
@@ -638,8 +685,9 @@ async function boot() {
       world.setPledges(pd.items.map((p) => ({ id: p.id, themeId: pledgeTheme(p), status: p.status })),
         Object.fromEntries(PLEDGE_ORDER.map((s) => [s, PLEDGE_STATUS[s].color])));
       const c = countByStatus(pd.items);
-      $('#layer-legend').innerHTML = PLEDGE_ORDER.filter((s) => c[s]).map((s) => `<span><i style="background:${PLEDGE_STATUS[s].color}"></i>${PLEDGE_STATUS[s].label} ${c[s]}</span>`).join('')
+      pledgeLegend = PLEDGE_ORDER.filter((s) => c[s]).map((s) => `<span><i style="background:${PLEDGE_STATUS[s].color}"></i>${PLEDGE_STATUS[s].label} ${c[s]}</span>`).join('')
         + '<small>點承諾牌看查證摘要</small>';
+      if (document.body.classList.contains('pledge-mode')) $('#layer-legend').innerHTML = pledgeLegend;
     }).catch(() => { layerBox.hidden = true; });
   } else {
     layerBox.hidden = true;
@@ -650,7 +698,7 @@ async function boot() {
     tour = createTour({
       world, themes, byId, loadPledges,
       onStart: () => {
-        if (document.body.classList.contains('pledge-mode')) setLayer('items');
+        if (!document.body.classList.contains('pledge-mode') && !document.body.classList.contains('link-mode')) { /* 已是施政圖層 */ } else setLayer('items');
         stopPlay();
         closeBubble();
         if (view !== 'island') setView('island');
@@ -663,14 +711,20 @@ async function boot() {
       onPledges: (id) => { setView('pledges'); if (id) ensurePledges().then(() => focusPledge(pledgesRoot, id)); },
     });
     $('#btn-tour').addEventListener('click', () => tour.start());
+    $('#hero-stories').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-story]');
+      if (b) { tour.start(b.dataset.story); history.replaceState(null, '', `#/story/${b.dataset.story}`); }
+    });
   } else {
     $('#btn-tour').hidden = true;
+    $('#hero-stories').hidden = true;
   }
 
   // ---------- deep link ----------
   function fromHash() {
     const [, id, itemId] = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/) || [];
     if (id === 'tour') { if (tour && !tour.active) tour.start(); return; }
+    if (id === 'story') { if (tour) tour.start(itemId); return; }
     if (id === 'pledges') {
       setView('pledges');
       if (itemId) ensurePledges().then(() => focusPledge(pledgesRoot, itemId));
