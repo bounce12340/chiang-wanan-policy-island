@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   links:
-    runs-on: ubuntu-24.04 # Playwright 1.56 尚未支援 ubuntu-latest（26.04）
+    runs-on: ubuntu-26.04 # 明確指定版本，避免 ubuntu-latest 自動升級時突然壞掉；Playwright 1.61 起支援 26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

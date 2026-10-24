@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-24.04 # Playwright 1.56 尚未支援 ubuntu-latest（26.04）
+    runs-on: ubuntu-26.04 # 明確指定版本，避免 ubuntu-latest 自動升級時突然壞掉；Playwright 1.61 起支援 26.04
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
