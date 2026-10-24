@@ -276,7 +276,7 @@ async function boot() {
     $('#list-inner').innerHTML = `<h2>全部施政項目</h2><p class="lead">依政策領域排列，共 ${allItems.length} 項。點來源連結可查看原始資料。</p>` +
       themes.map((t, n) => `<section class="theme-block" id="list-${t.id}">
         <div class="theme-head"><img class="theme-art" src="./assets/themes/${t.id}.webp" alt="" loading="lazy" width="800" height="600">
-        <div><h3><em style="color:${t.color}">${String(n + 1).padStart(2, '0')}</em>${esc(t.name)}</h3><p>${esc(t.summary)}</p></div></div>
+        <div><h3><em style="--c:${t.color};color:${t.color}">${String(n + 1).padStart(2, '0')}</em>${esc(t.name)}</h3><p>${esc(t.summary)}</p></div></div>
         <div class="grid">${[...t.items].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)).map((i) => itemHTML(i, t)).join('')}</div>
       </section>`).join('');
   }

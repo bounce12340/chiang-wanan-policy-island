@@ -30,7 +30,7 @@ const DIR = { 新設: '#2f7dd3', 增加: '#2e9e5b', 減少: '#c8463d' };
 export function renderLedger(root, data) {
   const groups = data.groups;
   const maxN = Math.max(...groups.map((g) => g.items.length), 1);
-  const bars = groups.map((g) => `<li><a href="#ledger-${esc(g.id)}"><span class="lg-name">${esc(g.group)}</span>
+  const bars = groups.map((g, n) => `<li style="--i:${n}"><a href="#ledger-${esc(g.id)}"><span class="lg-name">${esc(g.group)}</span>
       <span class="lg-bar"><i style="width:${(g.items.length / maxN) * 100}%"></i></span><b>${g.items.length}</b></a></li>`).join('');
 
   const groupCards = groups.map((g) => `

@@ -1,0 +1,286 @@
+/* =========================================================
+   疊加頁「市政年報」版式
+   清單、時間軸、政見兌現、民生帳本、市長接力五頁共用：
+   報紙版面的粗細雙線、宋體大標、印章頁碼、分欄排版。
+   只作用在 .overlay-view 內，不影響 3D 島嶼、面板與嵌入卡片。
+   ========================================================= */
+.overlay-view {
+  --paper: #f3eee2;
+  --paper-2: #e8e0cc;
+  --ink: #1d1b16;
+  --ink-soft: #5a544a;
+  --line: rgba(29, 27, 22, .2);
+  --rule: #1d1b16;
+  --accent: #b8382a;          /* 朱印紅：只用在頁碼印章、引號與刪除線 */
+  --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-num: "Fraunces", var(--serif);
+  --mono: "IBM Plex Mono", ui-monospace, var(--font);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .09 0 0 0 0 .07 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background: var(--grain), var(--paper);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  color: var(--ink);
+}
+body.night .overlay-view {
+  --paper: #17150f;
+  --paper-2: #26221a;
+  --ink: #ede6d4;
+  --ink-soft: #ada391;
+  --line: rgba(237, 230, 212, .2);
+  --rule: #ede6d4;
+  --accent: #e2604d;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .97 0 0 0 0 .9 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#list-view     { --pg: "01"; --kicker: "第 01 版　施政總覽　｜　臺北施政島 市政年報"; }
+#timeline-view { --pg: "02"; --kicker: "第 02 版　大事紀　｜　臺北施政島 市政年報"; }
+#pledges-view  { --pg: "03"; --kicker: "第 03 版　政見查核　｜　臺北施政島 市政年報"; }
+#ledger-view   { --pg: "04"; --kicker: "第 04 版　民生　｜　臺北施政島 市政年報"; }
+#mayors-view   { --pg: "05"; --kicker: "第 05 版　市政史　｜　臺北施政島 市政年報"; }
+
+.overlay-view .overlay-inner { max-width: 1120px; padding: 0 8px 80px; }
+
+/* ---------- 刊頭：雙線＋版次＋宋體大標＋印章 ---------- */
+.overlay-inner::before {
+  content: var(--kicker);
+  display: block; padding: 13px 0 9px; margin-top: 8px;
+  border-top: 4px solid var(--rule); border-bottom: 1px solid var(--rule);
+  background: linear-gradient(var(--rule), var(--rule)) 0 3px / 100% 1px no-repeat;
+  font: 600 11.5px/1.2 var(--mono); letter-spacing: .16em; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.overlay-inner > h2 {
+  position: relative; margin: 26px 0 14px; padding-right: 96px;
+  font: 900 clamp(40px, 6.2vw, 82px)/1.06 var(--serif); letter-spacing: -.005em; color: var(--ink);
+  text-wrap: balance;
+}
+/* 頁碼印章：方形朱印、內框留白、略帶紙紋 */
+.overlay-inner > h2::after {
+  content: var(--pg);
+  position: absolute; right: 6px; top: 50%; width: 70px; height: 70px;
+  display: grid; place-items: center;
+  font: 900 30px/1 var(--font-num); color: #fbf6ea; letter-spacing: -.02em;
+  background: var(--accent); border-radius: 7px;
+  box-shadow: inset 0 0 0 4px var(--accent), inset 0 0 0 6px #fbf6ea;
+  transform: translateY(-50%) rotate(-7deg);
+}
+.overlay-inner > p.lead {
+  max-width: 44em; margin: 0 0 34px;
+  font: 500 clamp(16px, 1.55vw, 19px)/1.85 var(--serif); color: var(--ink-soft);
+}
+
+/* ---------- 共用元件 ---------- */
+.overlay-view .badge { border-radius: 2px; padding: 3px 7px; font: 600 11px/1.2 var(--mono); letter-spacing: .06em; }
+.overlay-view .item-date, .overlay-view .lg-when { font: 500 11.5px var(--mono); letter-spacing: .04em; color: var(--ink-soft); }
+.overlay-view .sources { gap: 4px 14px; }
+.overlay-view .src {
+  padding: 1px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none;
+  font: 400 11.5px/1.5 var(--mono); color: var(--ink-soft);
+}
+.overlay-view .src:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.overlay-view :is(.share-btn, .report-btn, .copy-btn, .pl-go) {
+  padding: 3px 0; border: 0; border-bottom: 1px solid currentColor; border-radius: 0; background: none;
+  font: 600 12px var(--mono); color: var(--ink-soft);
+}
+.overlay-view :is(.share-btn, .report-btn, .copy-btn, .pl-go):hover { color: var(--accent); }
+.overlay-view .item-actions, .overlay-view .pl-tools, .overlay-view .pl-links { gap: 16px; }
+.overlay-view .chip {
+  border-radius: 2px; border-color: var(--line); background: transparent; padding: 5px 10px;
+  font: 500 13px var(--font);
+}
+.overlay-view .chip:hover { border-color: var(--rule); }
+.overlay-view .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.overlay-view .chip i { border-radius: 1px; }
+.overlay-view .chip .n { font: 500 12px var(--mono); }
+.overlay-view details:is(.pl-method) {
+  margin: 0 0 28px; padding: 12px 16px; border: 1px solid var(--rule); border-radius: 0;
+  background: transparent; font-size: 13.5px;
+}
+.overlay-view .pl-method summary { font: 700 14px var(--serif); list-style: none; display: flex; align-items: center; gap: 10px; }
+.overlay-view .pl-method summary::-webkit-details-marker { display: none; }
+.overlay-view .pl-method summary::before {
+  content: "編者按"; font: 600 10.5px/1 var(--mono); letter-spacing: .14em; color: var(--paper); background: var(--ink); padding: 4px 6px;
+}
+.overlay-view .pl-method summary::after { content: "＋"; margin-left: auto; font-family: var(--mono); }
+.overlay-view .pl-method[open] summary::after { content: "－"; }
+.overlay-view .pl-more summary { font-weight: 700; }
+.overlay-view .pl-crit summary { color: var(--accent); }
+
+/* 分欄排版：像報紙一樣由上往下流，長短卡片不再留大片空白 */
+.overlay-view :is(.grid, .pl-list, .lg-groups, .lg-probs) {
+  display: block; columns: 3 290px; column-gap: 44px; column-rule: 1px solid var(--line);
+}
+.overlay-view .mayors { display: block; columns: 2 380px; column-gap: 44px; column-rule: 1px solid var(--line); }
+.overlay-view :is(.grid > .item, .pl, .lg-group, .lg-prob, .mayor) {
+  break-inside: avoid; -webkit-column-break-inside: avoid; display: block;
+}
+
+/* ---------- 施政項目（清單、時間軸） ---------- */
+.overlay-view .item {
+  margin: 0 0 26px; padding: 12px 0 0; border: 0; border-top: 2px solid var(--rule); border-radius: 0;
+  background: none; box-shadow: none;
+}
+.overlay-view .item.is-flash { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent); }
+.overlay-view .item h3 { margin: 10px 0 8px; font: 700 19px/1.45 var(--serif); }
+.overlay-view .item ul { list-style: none; padding: 0; font-size: 14px; line-height: 1.75; }
+.overlay-view .item ul li { position: relative; padding-left: 16px; }
+.overlay-view .item ul li::before { content: ""; position: absolute; left: 0; top: .9em; width: 8px; height: 1px; background: var(--ink-soft); }
+.overlay-view .item-actions { justify-content: flex-start; margin-top: 10px; }
+
+/* 清單：領域分節 */
+.overlay-view .theme-block { margin-top: 54px; padding-top: 16px; border-top: 4px double var(--rule); }
+.overlay-view .theme-head { gap: 20px; align-items: flex-end; margin-bottom: 22px; }
+.overlay-view .theme-art {
+  width: 150px; height: 112px; border-radius: 0; border: 1px solid var(--rule);
+  filter: saturate(.75) contrast(1.06) sepia(.12);
+}
+.overlay-view .theme-head h3 { gap: 14px; align-items: baseline; margin: 0 0 6px; font: 900 34px/1.1 var(--serif); }
+.overlay-view .theme-head h3 em {
+  font: 900 58px/0.8 var(--font-num); letter-spacing: -.03em;
+  color: transparent !important; -webkit-text-stroke: 1.6px var(--c, currentColor);
+}
+.overlay-view .theme-head p { font: 500 15px/1.7 var(--serif); }
+
+/* 時間軸：粗墨線＋菱形節點＋大號年份 */
+.overlay-view .tl-year {
+  margin: 58px 0 18px; font: 800 clamp(64px, 11vw, 132px)/.82 var(--font-num); letter-spacing: -.045em; color: var(--ink);
+  font-variation-settings: "SOFT" 50, "WONK" 1;
+}
+.overlay-view .tl-row { grid-template-columns: 116px minmax(0, 1fr); gap: 22px; margin-left: 4px; padding: 0 0 0 26px; border-left: 3px solid var(--rule); }
+.overlay-view .tl-row::before {
+  left: -8px; top: 18px; width: 11px; height: 11px; border-radius: 0; border: 2px solid var(--paper);
+  transform: rotate(45deg); background: var(--dot, var(--ink));
+}
+.overlay-view .tl-when { padding-top: 14px; font: 600 12.5px var(--mono); letter-spacing: .05em; color: var(--ink); }
+.overlay-view .tl-row .item { margin: 0 0 30px; }
+.overlay-view .tl-theme { font: 600 11.5px var(--mono); letter-spacing: .08em; }
+.overlay-view #tl-future { margin-top: 40px; }
+.overlay-view #tl-future .lead { font: 500 16px/1.8 var(--serif); color: var(--ink-soft); max-width: 44em; }
+.overlay-view .tl-rules { font-size: 13px; }
+.overlay-view .tl-fy { margin: 26px 0 8px 4px; font: 800 30px var(--font-num); color: var(--ink); }
+.overlay-view .future-item { border-top-style: dashed; }
+.overlay-view .future-item .pop-quote { font: 700 18px/1.5 var(--serif); }
+
+/* ---------- 政見兌現 ---------- */
+.overlay-view .pl-summary-box { margin-bottom: 18px; padding: 18px 0 14px; border: 0; border-top: 4px solid var(--rule); border-bottom: 1px solid var(--rule); border-radius: 0; background: none; }
+.overlay-view .pl-bar { height: 34px; border-radius: 0; gap: 3px; background: none; }
+.overlay-view .pl-bar span { transform-origin: left; }
+.overlay-view .pl-legend { gap: 8px 26px; margin-top: 14px; font-size: 13.5px; }
+.overlay-view .pl-legend span { display: inline-flex; align-items: baseline; gap: 6px; }
+.overlay-view .pl-legend i { border-radius: 1px; align-self: center; }
+.overlay-view .pl-legend b { font: 800 30px/1 var(--font-num); letter-spacing: -.02em; }
+.overlay-view .pl-asof { margin-top: 12px; font: 500 12px var(--mono); letter-spacing: .03em; }
+.overlay-view .pl-filters { margin: 0 0 6px; }
+.overlay-view .pl-shown { font: 500 12px var(--mono); margin-bottom: 18px; }
+.overlay-view .pl {
+  margin: 0 0 30px; padding: 12px 0 0; gap: 10px; border: 0; border-top: 2px solid var(--rule); border-radius: 0; background: none;
+}
+.overlay-view .pl.is-flash { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent); }
+.overlay-view .pl-cat { font: 600 11.5px var(--mono); letter-spacing: .08em; }
+.overlay-view .pl-conf { border-radius: 0; font: 500 10.5px var(--mono); }
+.overlay-view .pl-quote { padding: 0; border: 0; font: 700 17px/1.65 var(--serif); }
+.overlay-view .pl-quote::before {
+  content: "“"; display: block; height: 24px; margin-bottom: 2px;
+  font: 900 64px/1 var(--font-num); color: var(--accent);
+}
+.overlay-view .pl-summary { font-size: 14px; line-height: 1.8; color: var(--ink-soft); }
+.overlay-view .pl-deadline { font: 600 12px var(--mono); }
+
+/* ---------- 民生帳本 ---------- */
+.overlay-view .mayor-h {
+  display: flex; align-items: baseline; gap: 12px; margin: 56px 0 8px; padding-top: 12px;
+  border-top: 4px double var(--rule); font: 900 clamp(24px, 2.6vw, 32px)/1.2 var(--serif);
+}
+.overlay-view .mayor-h::before { content: ""; width: 12px; height: 12px; flex: none; background: var(--accent); transform: translateY(-2px); }
+.overlay-view .lg-sub { margin: 0 0 18px; font-size: 13.5px; }
+.overlay-view .lg-bars { gap: 2px; margin: 0 0 36px; padding: 6px 0; border: 0; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--rule); border-radius: 0; background: none; }
+.overlay-view .lg-bars li + li { border-top: 1px dotted var(--line); }
+.overlay-view .lg-bars a { grid-template-columns: 11em minmax(0, 1fr) 2.6em; gap: 16px; padding: 7px 0; font: 600 14px var(--serif); }
+.overlay-view .lg-bars a:hover .lg-name { color: var(--accent); }
+.overlay-view .lg-bar {
+  height: 16px; border-radius: 0;
+  background: repeating-linear-gradient(-45deg, transparent 0 4px, var(--line) 4px 5px);
+}
+.overlay-view .lg-bar i { background: var(--ink); opacity: 1; transform-origin: left; }
+.overlay-view .lg-bars b { font: 800 26px/1 var(--font-num); letter-spacing: -.02em; }
+.overlay-view :is(.lg-group, .lg-prob) {
+  margin: 0 0 32px; padding: 12px 0 0; border: 0; border-top: 2px solid var(--rule); border-radius: 0; background: none;
+}
+.overlay-view .lg-group h4 { margin: 0 0 8px; font: 900 24px/1.25 var(--serif); }
+.overlay-view .lg-group h4 small { font: 500 11.5px var(--mono); letter-spacing: .06em; }
+.overlay-view .lg-group li { padding-top: 12px; border-top: 1px dotted var(--line); }
+.overlay-view .lg-top b, .overlay-view .lg-prob .lg-top b { font: 700 15.5px/1.45 var(--serif); }
+.overlay-view .lg-change { gap: 4px 8px; margin: 8px 0 4px; font-size: 14px; }
+.overlay-view .lg-before { text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; }
+.overlay-view .lg-arrow { color: var(--accent); font-weight: 700; }
+.overlay-view .lg-after { font-weight: 700; color: var(--ink); }
+.overlay-view .lg-note { border-left: 2px solid var(--line); }
+.overlay-view .lg-ba { gap: 0; border: 1px solid var(--rule); }
+.overlay-view .lg-ba div { border-radius: 0; background: none; }
+.overlay-view .lg-ba div + div { border-left: 1px solid var(--rule); }
+.overlay-view .lg-ba small { font: 600 10.5px var(--mono); letter-spacing: .12em; }
+.overlay-view .lg-pill { border-radius: 2px; font: 600 11px var(--mono); }
+
+/* ---------- 市長接力 ---------- */
+.overlay-view .term-band { margin: 4px 0 34px; }
+.overlay-view .term-band > span {
+  border: 0; border-top: 6px solid var(--c); border-radius: 0;
+  background: color-mix(in srgb, var(--c) 13%, transparent);
+}
+.overlay-view .term-band > span { padding: 5px 8px 0; }
+.overlay-view .term-band > span b { font: 900 16px/1.25 var(--serif); }
+.overlay-view .term-band > span small { display: block; line-height: 1.3; }
+.overlay-view .term-band > span small, .overlay-view .term-years i { font-family: var(--mono); }
+.overlay-view .relays { gap: 0; }
+.overlay-view .relay { margin: 0 0 30px; padding: 12px 0 0; border: 0; border-top: 2px solid var(--rule); border-radius: 0; background: none; }
+.overlay-view .relay h4 { font: 900 24px/1.3 var(--serif); }
+.overlay-view .relay-sum { font: 500 14.5px/1.75 var(--serif); }
+.overlay-view .relay-track > span { height: 3px; top: 7px; }
+.overlay-view .relay-dot { border-radius: 0; transform: rotate(45deg); width: 13px; height: 13px; margin-left: -6.5px; top: 2px; box-shadow: none; }
+.overlay-view .relay-dot:hover { transform: rotate(45deg) scale(1.35); }
+.overlay-view .relay-stages { gap: 0; }
+.overlay-view .relay-stages li { padding: 9px 10px; border-radius: 0; background: none; border-bottom: 1px dotted var(--line); }
+.overlay-view .relay-stages .who { font-family: var(--serif); }
+.overlay-view .relay-stages .when { font: 500 11.5px var(--mono); }
+.overlay-view .mayor { margin: 0 0 34px; padding: 14px 0 0; border: 0; border-top: 8px solid var(--c); border-radius: 0; background: none; }
+.overlay-view .mayor header h3 { font: 900 38px/1.1 var(--serif); }
+.overlay-view .mayor header p { font: 500 12px var(--mono); letter-spacing: .04em; }
+.overlay-view .mayor-items li { border-top: 1px dotted var(--line); }
+
+/* ---------- 開版動畫：刊頭線展開 → 大標升起 → 蓋印 → 內文依序浮現 ---------- */
+@keyframes ed-rule { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes ed-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes ed-stamp {
+  0% { opacity: 0; transform: translateY(-50%) rotate(-18deg) scale(1.9); }
+  60% { opacity: 1; transform: translateY(-50%) rotate(-5deg) scale(.94); }
+  100% { opacity: 1; transform: translateY(-50%) rotate(-7deg) scale(1); }
+}
+@keyframes ed-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.overlay-view:not([hidden]) .overlay-inner::before { animation: ed-rule .7s cubic-bezier(.6, 0, .2, 1) both; }
+.overlay-view:not([hidden]) .overlay-inner > h2 { animation: ed-rise .7s .12s cubic-bezier(.2, .7, .2, 1) both; }
+.overlay-view:not([hidden]) .overlay-inner > h2::after { animation: ed-stamp .55s .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+.overlay-view:not([hidden]) .overlay-inner > p.lead { animation: ed-rise .7s .22s cubic-bezier(.2, .7, .2, 1) both; }
+.overlay-view:not([hidden]) .overlay-inner > :nth-child(n+3) { animation: ed-rise .7s .34s cubic-bezier(.2, .7, .2, 1) both; }
+.overlay-view:not([hidden]) .overlay-inner > :nth-child(4) { animation-delay: .42s; }
+.overlay-view:not([hidden]) .overlay-inner > :nth-child(5) { animation-delay: .5s; }
+.overlay-view:not([hidden]) .overlay-inner > :nth-child(n+6) { animation-delay: .58s; }
+.overlay-view:not([hidden]) .pl-bar span,
+.overlay-view:not([hidden]) .lg-bar i { animation: ed-grow 1s .5s cubic-bezier(.2, .8, .2, 1) both; }
+.overlay-view:not([hidden]) .lg-bars .lg-bar i { animation-delay: calc(.45s + var(--i, 0) * 45ms); }
+
+/* ---------- 手機 ---------- */
+@media (max-width: 760px) {
+  .overlay-view .overlay-inner { padding: 0 4px 80px; }
+  .overlay-inner::before { font-size: 10px; letter-spacing: .1em; }
+  .overlay-inner > h2 { margin-top: 20px; padding-right: 64px; }
+  .overlay-inner > h2::after { width: 50px; height: 50px; font-size: 22px; right: 2px; border-radius: 5px; box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 0 4.5px #fbf6ea; }
+  .overlay-view .theme-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .overlay-view .theme-art { width: 100%; height: 150px; }
+  .overlay-view .theme-head h3 { font-size: 28px; }
+  .overlay-view .theme-head h3 em { font-size: 46px; }
+  .overlay-view .tl-row { grid-template-columns: minmax(0, 1fr); gap: 0; padding-left: 18px; }
+  .overlay-view .tl-when { padding-top: 10px; }
+  .overlay-view .tl-row::before { top: 14px; }
+  .overlay-view .lg-bars a { grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) 2em; gap: 10px; font-size: 13px; }
+  .overlay-view .lg-bars b { font-size: 21px; }
+  .overlay-view .pl-legend b { font-size: 24px; }
+  .overlay-view .mayor header h3 { font-size: 32px; }
+}
