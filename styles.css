@@ -636,3 +636,44 @@ body.night .district-label { background: rgba(18,26,46,.8); color: #b7c1d8; }
 body.night .district-label b { color: #eef2fb; }
 .hide-labels .district-label, .staging .district-label, .bubbling .district-label, body.touring .district-label { opacity: 0; }
 @media (max-width: 760px) { .district-label { font-size: 9.5px; padding: 2px 6px; } }
+
+/* ---------- 市長接力 ---------- */
+.term-band { position: relative; height: 72px; margin: 6px 0 22px; }
+.term-band > span { position: absolute; top: 0; height: 50px; border-radius: 10px; background: color-mix(in srgb, var(--c) 18%, var(--paper)); border: 2px solid var(--c); padding: 4px 8px; overflow: hidden; }
+.term-band > span b { display: block; font-size: 14px; color: var(--ink); white-space: nowrap; }
+.term-band > span small { font-family: var(--font-num); font-size: 11px; color: var(--ink-soft); }
+.term-years { position: absolute; left: 0; right: 0; top: 56px; height: 16px; }
+.term-years i { position: absolute; transform: translateX(-50%); font: 500 11px var(--font-num); color: var(--ink-soft); font-style: normal; }
+.mayor-h { font-size: 19px; margin: 26px 0 10px; }
+.relays { display: grid; gap: 12px; }
+.relay { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--paper); }
+.relay h4 { margin: 0; font-size: 16.5px; }
+.relay-sum { margin: 4px 0 10px; font-size: 13.5px; color: var(--ink-soft); }
+.relay-track { position: relative; height: 18px; margin: 4px 0 12px; }
+.relay-track > span { position: absolute; top: 7px; height: 4px; background: color-mix(in srgb, var(--c) 45%, transparent); }
+.relay-dot { position: absolute; top: 1px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid var(--paper); background: var(--c); padding: 0; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.relay-dot:hover { transform: scale(1.3); }
+.relay-stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.relay-stages li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 6px 8px; border-left: 4px solid var(--c); border-radius: 6px; background: var(--paper-2); font-size: 13.5px; }
+.relay-stages li.is-flash { box-shadow: 0 0 0 3px rgba(47,125,211,.25); }
+.relay-stages .who { font-weight: 900; }
+.relay-stages .when { font-family: var(--font-num); font-size: 12px; color: var(--ink-soft); }
+.relay-stages .what { flex: 1 1 260px; }
+.mayors { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.mayor { min-width: 0; overflow-wrap: anywhere; border: 1px solid var(--line); border-top: 6px solid var(--c); border-radius: 16px; padding: 14px; background: var(--paper); }
+.mayor header h3 { margin: 0; font-size: 20px; }
+.mayor header p { margin: 2px 0 8px; font-size: 12.5px; color: var(--ink-soft); }
+.mayor-items { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.mayor-items li { border-top: 1px dashed var(--line); padding-top: 8px; }
+.mi-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; align-items: baseline; }
+.mi-top b { font-size: 14.5px; }
+.mi-top span { font-family: var(--font-num); font-size: 11.5px; color: var(--ink-soft); white-space: nowrap; }
+.mayor-items p { margin: 4px 0 6px; font-size: 13.5px; line-height: 1.65; color: var(--ink-soft); }
+.mayor .pl-more { margin-top: 10px; }
+.mayor-more { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+@media (max-width: 760px) {
+  .term-band > span b { font-size: 11px; }
+  .term-band > span small { display: none; }
+  .mayors { grid-template-columns: 1fr; }
+  .view-btn { font-size: 12.5px; padding: 7px 1px; }
+}

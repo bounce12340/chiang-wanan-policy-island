@@ -77,11 +77,12 @@ for (const [name, opts] of [
   await page.waitForTimeout(1500);
   check(await page.$eval('#panel', (p) => p.classList.contains('is-open')), `${name}: 深連結打開居住島面板`);
 
-  for (const v of ['list', 'timeline', 'pledges']) {
+  for (const v of ['list', 'timeline', 'mayors', 'pledges']) {
     await page.click(`[data-view="${v}"]`);
     await page.waitForTimeout(600);
     check(await page.$eval(`#${v}-view`, (el) => !el.hidden), `${name}: 切換到 ${v} 檢視`);
   }
+  check(await page.$$eval('#mayors-view .mayor', (e) => e.length) === 5 && await page.$$eval('#mayors-view .relay', (e) => e.length) >= 4, `${name}: 市長接力顯示 5 任市長與跨任期建設`);
   await page.waitForSelector('.pl', { timeout: 10000 });
   check(await page.$$eval('.pl', (e) => e.length) === pledgeCount, `${name}: 政見卡片數 = ${pledgeCount}`);
   await page.click('[data-view="island"]');

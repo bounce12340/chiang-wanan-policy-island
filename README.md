@@ -14,7 +14,8 @@ The site's interface and content are in Traditional Chinese.
   - **In progress** — under construction or being rolled out
   - **Planned** — proposed by the city or still being pursued, not yet approved
   - **Re-election pledge** — future commitments made during the campaign
-- **Four views:** 3D islands, list, timeline, and the 2022 pledge tracker, with a status filter and a time-of-day toggle
+- **Five views:** 3D islands, list, timeline, the 2022 pledge tracker, and the mayors relay, with a status filter and a time-of-day toggle
+- **Mayors relay:** every directly elected Taipei mayor since 1994 (Chen Shui-bian, Ma Ying-jeou, Hau Lung-bin, Ko Wen-je, Chiang Wan-an), each with 8 representative municipal actions and 2–3 widely reported municipal controversies, plus six cross-term projects (Taipei Dome, MRT Wenhu and Xinyi lines, YouBike, social housing, Beitou-Shilin Science Park) showing which administration did which stage. All five mayors are held to the same inclusion rules; personal court cases are excluded for everyone; colours mark terms, not parties. Data in [`data/mayors.json`](data/mayors.json)
 - **2022 pledge tracker:** all 83 pledges from Chiang's 2022 mayoral campaign, each checked against public records up to **2026-10-24** and rated against the pledge's own wording (numbers, deadlines, scope):
   - **Fulfilled**, **Partly fulfilled**, **In progress**, **Not fulfilled**, **Not measurable**, **No public data**
   - Each pledge shows the original wording, the evidence, criticism where reported, sources, and links to related items on the islands
