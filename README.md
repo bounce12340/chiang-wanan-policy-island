@@ -22,7 +22,16 @@ The site's interface and content are in Traditional Chinese.
   - Achievements of the previous administration and nationwide central-government policies do not count as fulfilled
   - Researched in two rounds, then independently reviewed item by item; data in [`data/pledges2022.json`](data/pledges2022.json)
 - **Policy scenes:** every item has its own animated mini-diorama that floats above its island, e.g. an adult handing a child a bottle of milk for the free-milk program, or a cheering crowd around the Taipei Dome. The scene follows whichever card you are reading in the panel.
-- **Island residents:** small animated people on each island that match its theme. Tap one and they stop, wave, and show a speech bubble with one sourced fact from that policy area, with a link to the full item.
+- **Island residents:** about 210 animated people walking the islands and the central plaza. Tap one and they stop, wave, and show a speech bubble with one sourced fact from that policy area, with a link to the full item. All residents share 7 instanced meshes, so the crowd size does not add draw calls.
+- **Three map layers:**
+  - **Term record:** one beacon per policy item, coloured by status
+  - **2022 pledges:** one sign per 2022 campaign pledge, coloured by fulfilment status; tap for a summary card
+  - **Policy links:** 10 arcs between related policies on different islands. A link is drawn only when a source explicitly states the connection, and every arc lists its sources
+- **Guided tour (`#/tour`):** a 70-second captioned camera tour over the nine islands, pairing each highlight with the matching 2022 pledge and ending with the overall fulfilment tally
+- **A day in the city (`#/story/parent`, `commuter`, `senior`):** three fictional residents walk through four policy scenes from dawn to night; every fact shown is sourced from the site's data
+- **Share cards:** every pledge (`/p/<id>`) and policy item (`/i/<id>`) has its own page with a 1200×630 preview image, generated at deploy time, so links posted on social media show that item's status
+- **Embeddable pledge card:** `/embed/pledge.html?id=<pledge-id>` can be embedded with an iframe on any site
+- **Report an error:** every card opens a pre-filled GitHub issue with the item ID and current rating
 - **Term timeline slider:** drag or play through 2022-12 → today; policy markers light up by each item's event date (opening, signing, announcement), with a ticker showing the latest item. The date reflects the recorded event, not when work on a policy began.
 - **Deep links** to any island, item or pledge, e.g. `#/transport`, `#/housing/housing-happy` or `#/pledges/p22-media-01`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
@@ -45,8 +54,16 @@ As of that date, no complete re-election platform had been published, so the re-
   - `people.js`: all animated people share 7 instanced meshes, so the crowd size does not add draw calls
   - `vignettes.js`: the per-item scene library and the item → scene mapping
   - `pledges.js`: the 2022 pledge tracker view, loaded separately from the 3D scene
+  - `tour.js`: the guided tour and the "day in the city" stories
+  - `data/links.json`: the sourced policy links
 - Mobile performance: static meshes are merged per island, water waves run in a vertex shader, rendering pauses in list/timeline views and background tabs, idle phones are capped at 30 fps, and quality steps down automatically on slow devices (`?quality=high` or `?quality=low` overrides this)
 - Devices without WebGL fall back to the list view
+
+### Tests and checks
+
+- `npm test` opens the site in headless Chromium (desktop and mobile), checks that the 3D scene starts, deep links, views, layers, tour and stories work, and that the console has no errors. The deploy workflow runs it before every deploy.
+- `npm run build:share` generates the share pages and preview images into `dist/` (run automatically on deploy).
+- `.github/workflows/linkcheck.yml` checks every source link each Monday and opens an issue if any link is dead.
 
 ### Rebuilding Three.js
 
