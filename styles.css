@@ -493,3 +493,12 @@ body:has(.panel.is-open) .timebar, .hide-labels .timebar { display: none; }
   .pl-filters .chip { flex: none; }
   .view-btn { font-size: 13px; padding: 7px 2px; }
 }
+
+/* ---------- 分享 ---------- */
+.share-btn { border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); border-radius: 9px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; }
+.share-btn::before { content: "↗ "; }
+.share-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+.item-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.toast { position: fixed; z-index: 60; left: 50%; bottom: calc(24px + var(--safe-b)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: #14213d; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; transition: .2s; }
+.toast.is-on { opacity: 1; transform: translate(-50%, 0); }

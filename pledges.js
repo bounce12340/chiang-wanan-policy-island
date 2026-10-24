@@ -58,7 +58,7 @@ function cardHTML(p, itemTitle) {
     ${ev ? `<details class="pl-more"><summary>查證依據（${p.evidence.length}）</summary><ul>${ev}</ul></details>` : ''}
     ${cr ? `<details class="pl-more pl-crit"><summary>爭議與批評（${p.critical.length}）</summary><ul>${cr}</ul></details>` : ''}
     ${(p.sources || []).length ? `<div class="sources">${p.sources.map(srcHTML).join('')}</div>` : ''}
-    <div class="pl-links">${related}<a class="pl-origin" href="${esc(safeUrl(p.origin_url))}" target="_blank" rel="noopener noreferrer">政見出處：${esc(p.origin)} ↗</a></div>
+    <div class="pl-links">${related}<button class="share-btn" data-share="/p/${esc(p.id)}" data-title="${esc(st.label)}｜${esc(p.pledge.slice(0, 40))}">分享</button><a class="pl-origin" href="${esc(safeUrl(p.origin_url))}" target="_blank" rel="noopener noreferrer">政見出處：${esc(p.origin)} ↗</a></div>
   </article>`;
 }
 

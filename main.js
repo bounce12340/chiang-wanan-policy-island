@@ -40,8 +40,32 @@ function itemHTML(item, theme, { showTheme = false } = {}) {
     <h3>${esc(item.title)}</h3>
     ${facts ? `<ul>${facts}</ul>` : ''}
     ${srcs ? `<div class="sources">${srcs}</div>` : ''}
+    <div class="item-actions"><button class="share-btn" data-share="/i/${esc(item.id)}" data-title="${esc(item.title)}">分享</button></div>
   </article>`;
 }
+
+// ---------- 分享：每一項都有自己的網址與縮圖（/p/<政見>、/i/<施政項目>） ----------
+function toast(msg) {
+  let t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg;
+  t.classList.add('is-on');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('is-on'), 2200);
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('.share-btn');
+  if (!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const url = new URL(b.dataset.share, location.origin).href;
+  const title = `${b.dataset.title}｜臺北施政島`;
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    try { await navigator.share({ title, url }); return; } catch (err) { if (err.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('已複製分享連結'); }
+  catch { window.prompt('複製這個連結：', url); }
+}, true);
 
 async function boot() {
   const res = await fetch('./data/policies.json', { cache: 'no-cache' });
@@ -194,7 +218,7 @@ async function boot() {
     const go = e.target.closest('[data-go]');
     if (go) { openTheme(go.dataset.go); return; }
     const card = e.target.closest('.item');
-    if (card && !e.target.closest('a')) stageItem(card.id.replace(/^item-/, ''));
+    if (card && !e.target.closest('a, button')) stageItem(card.id.replace(/^item-/, ''));
   });
   $('#panel-close').addEventListener('click', closePanel);
   document.addEventListener('keydown', (e) => {

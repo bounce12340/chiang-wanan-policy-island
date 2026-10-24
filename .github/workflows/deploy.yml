@@ -34,6 +34,17 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check:three
 
+      # 無頭瀏覽器＋中文字型：給煙霧測試與分享縮圖使用
+      - name: Install browser and CJK fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+          npx playwright install --with-deps chromium
+
+      # 真的打開網站：3D 有啟動、主控台沒有錯誤、各檢視都能切換
+      - name: Smoke test
+        run: npm test
+
       # 還沒設定金鑰時直接跳過，避免每次 push 都出現失敗紀錄
       - name: Check secrets
         id: guard
@@ -45,12 +56,13 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # 只部署網站本身的檔案
+      # 只部署網站本身的檔案，再產生每一條的分享頁與縮圖
       - name: Prepare site
         if: steps.guard.outputs.ready == 'true'
         run: |
           mkdir dist
           cp -r index.html styles.css main.js world.js people.js vignettes.js pledges.js _headers data vendor assets dist/
+          npm run build:share
 
       # 第一次部署時建立 Pages 專案；已存在就忽略錯誤
       - name: Ensure Pages project

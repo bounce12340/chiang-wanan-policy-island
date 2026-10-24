@@ -6,10 +6,13 @@
   "scripts": {
     "build:three": "node scripts/build-three.mjs",
     "serve": "python3 -m http.server 8000",
-    "check:three": "node scripts/build-three.mjs --check"
+    "check:three": "node scripts/build-three.mjs --check",
+    "build:share": "node scripts/build-share.mjs dist",
+    "test": "node tests/smoke.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.10",
+    "playwright": "^1.56.0",
     "three": "0.180.0"
   }
 }
