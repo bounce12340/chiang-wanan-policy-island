@@ -1,5 +1,5 @@
 // 「民生帳本」：各族群的補助在任內怎麼變（調整前 → 調整後），以及長期問題的前後指標。
-// 只列市府自己新增或調高的項目；中央補助不列；查不到的族群如實寫「查無」。
+// 只列市府自己新增、調高或縮減的項目；中央補助不列；任內沒有調整的族群不列。
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '#');
 const dot = (d) => String(d || '').replace(/-/g, '.');
@@ -64,7 +64,7 @@ export function renderLedger(root, data) {
     <p class="lead">${esc(data.meta.lead)}</p>
     <details class="pl-method"><summary>收錄標準</summary><ul>${data.meta.rules.map((r) => `<li>${esc(r)}</li>`).join('')}</ul></details>
     <h3 class="mayor-h">各族群的補助怎麼變</h3>
-    <p class="lg-sub">任內由市府新增或調高的現金、點數或免費服務項數（不代表金額大小）。點族群名稱跳到明細。</p>
+    <p class="lg-sub">任內由市府新增、調高或縮減的現金、點數或免費服務項數（不代表金額大小）。只列有調整的族群，點名稱跳到明細。</p>
     <ol class="lg-bars">${bars}</ol>
     <div class="lg-groups">${groupCards}</div>
     ${data.problems.length ? `<h3 class="mayor-h">長期問題處理到哪裡</h3>
