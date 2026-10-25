@@ -11,6 +11,7 @@ import { createTour } from './tour.js';
 import { loadMayors, renderMayors } from './mayors.js';
 import { loadLedger, renderLedger } from './ledger.js';
 import { initExtras } from './extras.js';
+import { initGames } from './games.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -191,6 +192,7 @@ async function boot() {
       world?.flashItem(id, itemId);
     }
     if (!fromHash) history.replaceState(null, '', `#/${id}${itemId ? '/' + itemId : ''}`);
+    games?.stamp(`isle:${id}`);
   }
 
   function closePanel() {
@@ -370,6 +372,7 @@ async function boot() {
     $('#pledges-view').hidden = v !== 'pledges';
     $('#mayors-view').hidden = v !== 'mayors';
     $('#ledger-view').hidden = v !== 'ledger';
+    if (['pledges', 'ledger', 'mayors', 'timeline'].includes(v)) games?.stamp(`view:${v}`);
     if (v === 'ledger') ensureLedger();
     if (v === 'timeline') ensureFuture().catch(() => {});
     if (v === 'pledges') ensurePledges();
@@ -393,6 +396,7 @@ async function boot() {
   let pledgesReady = null;
   let pledgeCtl = null;
   let extras = null;
+  let games = null;
   const pledgesRoot = $('#pledges-inner');
   function itemTitle(themeId, itemId) {
     const t = byId.get(themeId);
@@ -845,6 +849,8 @@ async function boot() {
     focusPledge: (id) => focusPledge(pledgesRoot, id),
     setPledgeFilters: (f) => pledgeCtl?.setFilters(f),
     loadPledges, loadLedger, loadMayors, loadFuture: ensureFuture,
+    onQuizDone: () => games?.stamp('game:quiz'),
+    openGames: () => games?.openHub(),
     setWho: (set) => {
       whoSet = set;
       world?.setItemSet(set);
@@ -852,6 +858,13 @@ async function boot() {
     },
   });
   extras.decorate(document);
+  games = initGames({
+    esc, fmtDate, toast, STATUS, allItems, themes,
+    setView, openTheme, loadPledges, loadMayors,
+    openQuiz: () => extras.openQuiz(),
+    openPledge: (id) => { setView('pledges'); ensurePledges().then(() => focusPledge(pledgesRoot, id)); history.replaceState(null, '', `#/pledges/${id}`); },
+  });
+  $('#btn-games').addEventListener('click', () => games.openHub());
   new Promise((r) => whenIdle(r)).then(() => extras.checkFresh());
 
   // ---------- deep link ----------
@@ -859,6 +872,11 @@ async function boot() {
     const [, id, itemId, query] = location.hash.match(/^#\/([\w-]+)(?:\/([^?]+))?(?:\?(.*))?$/) || [];
     if (id === 'list' || id === 'timeline') { setView(id); return; }
     if (id === 'quiz') { extras.openQuiz(); return; }
+    if (id === 'games') { games.openHub(); return; }
+    if (id === 'sort') { games.openSort(); return; }
+    if (id === 'whomayor') { games.openMayor(); return; }
+    if (id === 'daily') { games.openDaily(); return; }
+    if (id === 'passport') { games.openPassport(); return; }
     if (id === 'who') { extras.setWho(itemId); return; }
     if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
     if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }

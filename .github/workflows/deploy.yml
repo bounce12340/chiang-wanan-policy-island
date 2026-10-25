@@ -61,7 +61,7 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         run: |
           mkdir dist
-          cp -r index.html styles.css editorial.css main.js world.js people.js vignettes.js pledges.js tour.js mayors.js ledger.js extras.js store.js embed _headers data vendor assets dist/
+          cp -r index.html styles.css editorial.css main.js world.js people.js vignettes.js pledges.js tour.js mayors.js ledger.js extras.js store.js games.js embed _headers data vendor assets dist/
           npm run build:share
 
       # 第一次部署時建立 Pages 專案；已存在就忽略錯誤

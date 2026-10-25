@@ -121,6 +121,24 @@ for (const [name, opts] of [
   await page.evaluate(() => document.querySelector('#quiz [data-ans]').click());
   check(await page.$('#quiz .qz-reveal .src, #quiz .qz-reveal') !== null, `${name}: 猜猜看作答後揭曉`);
   await page.keyboard.press('Escape');
+  // 小遊戲：排排看、哪位市長、每日一題、護照
+  await page.evaluate(() => { location.hash = '#/sort'; });
+  await page.waitForFunction(() => document.querySelectorAll('#game .gm-sort li').length === 5, null, { timeout: 5000 });
+  await page.evaluate(() => document.querySelector('#game [data-s="submit"]').click());
+  check(/排對了 \d \/ 5/.test(await page.$eval('#game .qz-ask', (e) => e.textContent)), `${name}: 排排看可送出並計分`);
+  await page.evaluate(() => { location.hash = '#/whomayor'; });
+  await page.waitForFunction(() => document.querySelectorAll('#game [data-may]').length === 5, null, { timeout: 8000 });
+  const leak = await page.$eval('#game .qz-quote', (e) => /陳水扁|馬英九|郝龍斌|柯文哲|蔣萬安/.test(e.textContent));
+  await page.evaluate(() => document.querySelector('#game [data-may]').click());
+  check(!leak && await page.$('#game .qz-reveal') !== null, `${name}: 哪位市長題目不洩漏姓名、作答後揭曉`);
+  await page.evaluate(() => { location.hash = '#/daily'; });
+  await page.waitForFunction(() => document.querySelectorAll('#game [data-d]').length >= 2, null, { timeout: 8000 });
+  await page.evaluate(() => document.querySelector('#game [data-d]').click());
+  check(/連續作答 1 天/.test(await page.$eval('#game .gm-streak', (e) => e.textContent)), `${name}: 每日一題作答後記錄連續天數`);
+  await page.evaluate(() => { location.hash = '#/passport'; });
+  await page.waitForSelector('#game .pp-stamp.is-on', { timeout: 5000 });
+  check(await page.$$eval('#game .pp-stamp.is-on', (e) => e.length) >= 5, `${name}: 護照已蓋章（島、頁、遊戲）`);
+  await page.keyboard.press('Escape');
 
   check(errors.length === 0, `${name}: 主控台零錯誤${errors.length ? `\n    ${errors.slice(0, 5).join('\n    ')}` : ''}`);
   await ctx.close();

@@ -83,7 +83,7 @@
       <button class="cta" id="btn-start">開始探索</button>
       <button class="cta cta-2" id="btn-tour">▶ <span class="hide-sm">70 秒</span>導覽</button>
       <button class="cta cta-2" id="btn-pledges">2022 政見兌現</button>
-      <button class="cta cta-2" id="btn-quiz">🎯 猜猜看</button>
+      <button class="cta cta-2" id="btn-games">🎮 小遊戲</button>
     </div>
     <p class="hero-fresh" id="hero-fresh" role="status" hidden></p>
     <p class="hero-stories hero-who" id="hero-who"></p>
@@ -202,6 +202,12 @@
     <p class="who-note" id="who-note"></p>
   </dialog>
 
+  <dialog id="game" class="sheet sheet-quiz" aria-labelledby="game-h">
+    <button class="sheet-x" type="button" data-close aria-label="關閉">×</button>
+    <h2 id="game-h">小遊戲</h2>
+    <div id="game-body"></div>
+  </dialog>
+
   <dialog id="quiz" class="sheet sheet-quiz" data-hash="quiz" aria-labelledby="quiz-h">
     <button class="sheet-x" type="button" data-close aria-label="關閉">×</button>
     <h2 id="quiz-h">2022 政見猜猜看</h2>
@@ -229,7 +235,8 @@
       <li>每一項都有「回報錯誤」按鈕，會開一則 GitHub issue；請附上正確資訊的來源。</li>
       <li>「我是…」依各項目內容寫明的適用對象（例如「育有 12 歲以下子女」「未滿 40 歲」）把施政歸到身分，只收直接相關者；這是本站整理，不是市府分類。</li>
       <li>「政見猜猜看」從已兌現、部分兌現、未兌現三種狀態各抽幾題，比例不代表整體結果；答案與說明都來自政見兌現頁的查證資料。</li>
-      <li>收藏清單與「上次造訪後的新內容」只存在你這台裝置的瀏覽器裡（localStorage），本站沒有後端，不會收到這些資料。</li>
+      <li>小遊戲（排排看、這是哪位市長做的、每日一題）的題目都取自本站已查證的資料，不出自編的假敘述；「哪位市長」五任各出同樣題數，題目中的姓名以 ○○○ 代替。</li>
+      <li>收藏清單、遊戲紀錄、護照章與「上次造訪後的新內容」只存在你這台裝置的瀏覽器裡（localStorage），本站沒有後端，不會收到這些資料。</li>
     </ul>
     <h3>選舉背景</h3>
     <div id="about-campaign"></div>

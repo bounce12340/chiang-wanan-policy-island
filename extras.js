@@ -145,6 +145,7 @@ export function initExtras(ctx) {
     }
     fList.innerHTML = `
       <li class="fd-quick" role="presentation">
+        <button type="button" data-quick="games">🎮 小遊戲</button>
         <button type="button" data-quick="quiz">🎯 政見猜猜看</button>
         <button type="button" data-quick="who">👤 我是…</button>
         <button type="button" data-quick="saved">☆ 我的收藏（${favs.all().length}）</button>
@@ -178,7 +179,7 @@ export function initExtras(ctx) {
     const row = e.target.closest('.fd-row');
     if (row) { pick(+row.dataset.n); return; }
     const q = e.target.closest('[data-quick]');
-    if (q) { finder.close(); ({ quiz: openQuiz, who: openWho, saved: () => openSaved() })[q.dataset.quick](); }
+    if (q) { finder.close(); ({ quiz: openQuiz, who: openWho, saved: () => openSaved(), games: () => ctx.openGames?.() })[q.dataset.quick](); }
   });
   function openFinder(q = '') {
     if (!finder.open) finder.showModal();
@@ -380,6 +381,7 @@ export function initExtras(ctx) {
   function renderScore() {
     const { qs, answers } = quiz;
     const right = qs.filter((p, n) => answers[n] === p.status).length;
+    ctx.onQuizDone?.();
     quizBody.innerHTML = `
       <p class="qz-step">結果</p>
       <p class="qz-score"><b>${right}</b><span>/ ${qs.length}</span></p>
@@ -411,7 +413,7 @@ export function initExtras(ctx) {
     history.replaceState(null, '', '#/quiz');
     startQuiz().catch(() => { quizBody.innerHTML = '<p class="qz-ask">政見資料載入失敗，請稍後再試。</p>'; });
   }
-  $('#btn-quiz').addEventListener('click', openQuiz);
+  $('#btn-quiz')?.addEventListener('click', openQuiz);
 
   // =========================================================
   // 5. 上次造訪後的新內容

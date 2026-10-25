@@ -873,3 +873,75 @@ body:has(.who-bar:not([hidden])) .overlay-view { padding-top: 150px; }
   .hero-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .hero-actions .cta:first-child { flex: none; }
 }
+
+/* =========================================================
+   小遊戲：大廳、排排看、哪位市長、每日一題、護照
+   ========================================================= */
+.gm-cards { display: grid; gap: 8px; }
+.gm-card { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); border-radius: 14px; padding: 14px 14px; transition: transform .15s, border-color .2s; }
+.gm-card:hover { transform: translateY(-2px); border-color: var(--ink-soft); }
+.gm-card > b { font-size: 28px; line-height: 1; flex: none; }
+.gm-card > span { flex: 1; min-width: 0; }
+.gm-card strong { display: block; font-size: 16px; }
+.gm-card small { display: block; font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+.gm-tag { flex: none; font: 700 11.5px var(--font-num); font-style: normal; padding: 3px 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink-soft); }
+.gm-tag.is-hot { background: var(--st-pledge); border-color: var(--st-pledge); color: #fff; font-family: var(--font); }
+
+/* 排排看 */
+.gm-sort { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; counter-reset: gs; }
+.gm-sort li { counter-increment: gs; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); transition: box-shadow .2s, transform .2s; }
+.gm-sort li::before { content: counter(gs); flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--paper); font: 700 12px var(--font-num); }
+.gm-sort li.is-drag { box-shadow: var(--shadow); transform: scale(1.02); border-color: var(--ink-soft); z-index: 1; position: relative; }
+.gm-sort li.ok { border-color: var(--st-done); background: color-mix(in srgb, var(--st-done) 8%, var(--paper)); }
+.gm-sort li.no { border-color: #c8463d; background: color-mix(in srgb, #c8463d 6%, var(--paper)); }
+.gm-handle { flex: none; cursor: grab; touch-action: none; user-select: none; padding: 6px 4px; color: var(--ink-soft); font-weight: 900; letter-spacing: -2px; }
+.gm-handle:active { cursor: grabbing; }
+.gm-txt { flex: 1; min-width: 0; }
+.gm-txt strong { display: block; font-size: 14.5px; line-height: 1.45; }
+.gm-txt small { display: block; font-size: 12px; color: var(--ink-soft); }
+.gm-mv { flex: none; display: flex; flex-direction: column; gap: 3px; }
+.gm-mv button { width: 30px; height: 24px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper-2); color: var(--ink); font-size: 13px; line-height: 1; padding: 0; }
+.gm-when { flex: none; font: 700 12.5px var(--font-num); color: var(--ink); min-width: 78px; }
+.gm-go { flex: none; border: 1px solid var(--line); background: var(--paper-2); border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 700; color: var(--ink); }
+
+/* 哪位市長：五個選項 */
+.qz-opts.gm-mayors { grid-template-columns: repeat(5, 1fr); }
+.qz-opts.gm-mayors button { flex-direction: column; gap: 4px; padding: 10px 4px; }
+.qz-opts button span small { display: block; font: 600 10.5px var(--font-num); color: var(--ink-soft); margin-top: 2px; }
+.qz-opts.gm-two { grid-template-columns: 1fr 1fr; }
+.qz-opts.gm-two button { text-align: left; justify-content: flex-start; padding: 14px 12px; font-size: 14px; line-height: 1.45; }
+.qz-reveal .sources { margin-top: 0; }
+.gm-streak { font-size: 13px !important; color: var(--ink) !important; margin-top: 10px !important; }
+.gm-streak b { font-family: var(--font-num); }
+.qz-step > span:last-child:not(.qz-dots) { font-family: var(--font); letter-spacing: 0; color: var(--st-pledge); }
+
+/* 施政島護照：每枚章是一顆印章 */
+.pp-count { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; }
+.pp-count b { font: 700 56px/1 var(--font-num); }
+.pp-count span { font: 700 18px var(--font-num); color: var(--ink-soft); }
+.pp-badges { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.pp-badge { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line); color: var(--ink-soft); }
+.pp-badge b { grid-row: span 2; font-size: 26px; filter: grayscale(1); opacity: .5; }
+.pp-badge span { font-weight: 900; font-size: 14.5px; }
+.pp-badge small { font-size: 11.5px; }
+.pp-badge.is-on { border-style: solid; border-color: #e2b14a; background: color-mix(in srgb, #f2c94c 14%, var(--paper)); color: var(--ink); }
+.pp-badge.is-on b { filter: none; opacity: 1; }
+.pp-h { margin: 16px 0 8px; font-size: 13px; letter-spacing: .1em; color: var(--ink-soft); }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.pp-stamp { display: grid; justify-items: center; gap: 4px; padding: 10px 4px 8px; border: 1px dashed var(--line); border-radius: 12px; background: none; color: var(--ink-soft); }
+.pp-stamp i { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 8px; border: 2px dashed var(--line); font: 900 17px var(--font-num); font-style: normal; color: var(--line); }
+.pp-stamp span { font-size: 12.5px; font-weight: 700; line-height: 1.3; text-align: center; }
+.pp-stamp small { font: 500 10.5px var(--font-num); }
+.pp-stamp.is-on { border-style: solid; color: var(--ink); background: var(--paper-2); }
+.pp-stamp.is-on i {
+  border: 0; color: #fbf6ea; background: var(--c); transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 3px var(--c), inset 0 0 0 4.5px #fbf6ea; animation: pp-stamp .45s cubic-bezier(.3, 1.5, .5, 1) both;
+}
+@keyframes pp-stamp { from { transform: rotate(-20deg) scale(1.6); opacity: 0; } }
+@media (max-width: 760px) {
+  .qz-opts.gm-mayors { grid-template-columns: repeat(3, 1fr); }
+  .qz-opts.gm-two { grid-template-columns: 1fr; }
+  .gm-when { min-width: 0; font-size: 11.5px; }
+  .gm-sort li { flex-wrap: wrap; }
+  .gm-sort.is-done li .gm-txt { flex-basis: calc(100% - 40px); }
+}
