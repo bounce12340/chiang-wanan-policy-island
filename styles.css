@@ -213,6 +213,10 @@ body.night .center-label { color: #eef2fb; text-shadow: 0 1px 4px rgba(0,0,0,.6)
 .about .panel-close { position: absolute; }
 .about-tech { font-size: 12.5px !important; margin-top: 16px; }
 .about-links a { font-weight: 700; }
+.about-correction { margin: 0 0 14px; padding: 10px 14px; border-left: 3px solid var(--ink-soft); background: rgba(127, 127, 127, .08); border-radius: 6px; }
+.about-correction h3 { margin: 0 0 4px; }
+.about-correction p { margin: 4px 0; }
+.about del { opacity: .75; }
 
 /* ---------- misc ---------- */
 .footnote {

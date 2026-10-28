@@ -107,6 +107,10 @@ The workflow at `.github/workflows/deploy.yml` deploys on every push to `main` o
 
 If the secrets are missing, the deploy steps are skipped instead of failing.
 
+## 參考與製作方式
+
+互動形式參考 HEART 政策島（https://puma.taipei/heart-island ，2026/10/22 上線）。程式使用 Claude Code 在 AI 輔助下撰寫，插畫為 AI 生成；資料由作者整理查證，皆附來源。
+
 ## Corrections
 
 If you find an error or outdated information, please open an issue and include a source link.
