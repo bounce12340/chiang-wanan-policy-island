@@ -572,6 +572,27 @@ export const SCENES = {
     k.person({ x: 1.4, z: 1.0, anim: 'wave' });
   },
 
+  cprTraining(k) {
+    // 地墊上的安妮假人、跪姿按壓的學員、旁邊的 AED 與受訓進度板
+    k.box(1.5, 0.03, 0.8, '#2f7dd3', -0.1, 0, 0.1);
+    k.box(0.5, 0.12, 0.26, '#f0c9a8', -0.1, 0.03, 0.05);
+    k.sphere(0.11, '#f0c9a8', -0.42, 0.12, 0.05);
+    const chest = k.box(0.18, 0.04, 0.2, '#ffffff', 0.0, 0.15, 0.05, { dyn: true });
+    k.anim((t) => { chest.position.y = 0.15 - Math.max(0, Math.sin(t * 11)) * 0.03; });
+    k.person({ x: 0.0, z: 0.42, anim: 'work', rot: Math.PI, y: -0.12 });
+    k.person({ x: 0.75, z: 0.65, anim: 'point', shirt: '#d64545', rot: -2.6 });
+    k.person({ x: -0.9, z: 0.75, anim: 'clap', rot: 2.6 });
+    // AED：綠色機盒＋閃爍的心形燈
+    k.box(0.28, 0.34, 0.14, '#2e9e5b', 0.95, 0, -0.55);
+    const heart = k.sphere(0.06, '#ff5a5a', 0.95, 0.24, -0.47, { glow: true, dyn: true });
+    k.anim((t) => { heart.visible = Math.sin(t * 4) > -0.3; });
+    // 進度板：第一線員工受訓率 73.9%，目標 80%
+    k.box(1.1, 0.5, 0.05, '#f4f1ea', -0.6, 0.55, -0.85);
+    k.box(1.0, 0.1, 0.06, '#c9c4b8', -0.6, 0.7, -0.84);
+    k.box(0.74, 0.1, 0.07, '#2e9e5b', -0.6 - (1.0 - 0.74) / 2, 0.7, -0.83);
+    k.box(0.02, 0.18, 0.08, '#d64545', -0.6 - 0.5 + 0.8, 0.66, -0.82);
+  },
+
   // ===== 環境永續 =====
   carbon(k) {
     building(k, -0.9, -0.6, 0.9, 0.8, 0.7, '#c9c4b8');
@@ -754,6 +775,7 @@ export const ITEM_SCENES = {
   'safety-flood': ['floodTunnel'],
   'safety-building': ['inspection'],
   'safety-staffing': ['cityStaff'],
+  'safety-first-aid': ['cprTraining'],
   'environment-carbon': ['carbon'],
   'environment-waste': ['recycling'],
   'environment-river': ['riverside'],
