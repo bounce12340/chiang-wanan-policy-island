@@ -164,6 +164,7 @@ async function boot() {
         <h2>${esc(theme.name)}</h2>
         <p>${esc(theme.summary)}</p>
       </div>
+      ${theme.id === 'safety' && world ? '<button class="quake-btn" type="button" data-quake>🫨 地震演練：跟島民一起「趴下、掩護、穩住」</button>' : ''}
       <div class="status-bar">${STATUS_ORDER.map((s) => tc[s] ? `<span style="flex:${tc[s]};background:${STATUS[s].color}"></span>` : '').join('')}</div>
       <div class="status-count">${STATUS_ORDER.filter((s) => tc[s]).map((s) => `<span>${STATUS[s].label} <b>${tc[s]}</b></span>`).join('')}</div>
       ${sorted.map((i) => itemHTML(i, theme)).join('')}
@@ -237,6 +238,7 @@ async function boot() {
   panelInner.addEventListener('click', (e) => {
     const go = e.target.closest('[data-go]');
     if (go) { openTheme(go.dataset.go); return; }
+    if (e.target.closest('[data-quake]')) { runQuake(); return; }
     const card = e.target.closest('.item');
     if (card && !e.target.closest('a, button')) stageItem(card.id.replace(/^item-/, ''));
   });
@@ -629,6 +631,7 @@ async function boot() {
       onSelectPerson: (meta, person) => showPersonBubble(meta, person),
       onSelectPledge: (id) => showPledgePop(id),
       onSelectFuture: (id) => showFuturePop(id),
+      onSelectHotspot: (key) => showHotspot(key),
       onHoverPledge,
     });
     world.onBubbleGone(() => { bubbleOpen = false; });
@@ -694,6 +697,54 @@ async function boot() {
       history.replaceState(null, '', `#/pledges/${id}`);
     }
   });
+  // ---------- 小舞台上的提示牌與地震演練（安全韌性島） ----------
+  const srcA = (url, label) => `<a class="src" href="${esc(url)}" target="_blank" rel="noopener noreferrer">↗ ${esc(label)}</a>`;
+  const HOTSPOTS = {
+    aed: () => `<p class="pop-kicker">急救小卡・臺北市消防局教的口訣</p>
+      <p class="pop-quote">CPR＋AED：叫、叫、壓、電</p>
+      <ol class="hs-steps">
+        <li><b>叫</b>拍肩呼喚，確認有沒有反應、有沒有正常呼吸</li>
+        <li><b>叫</b>撥打 119 求救，請旁人去拿 AED</li>
+        <li><b>壓</b>兩乳頭連線中央，每分鐘 100–120 下（每秒約 2 下），深度 5–6 公分，用力壓、不中斷</li>
+        <li><b>電</b>拿到 AED 後打開電源，依語音指示操作</li>
+      </ol>
+      <p class="pop-sum">這只是重點提醒，不能取代實際訓練；遇到緊急狀況請立刻撥打 119。附近哪裡有 AED，可以查衛福部的「公共場所 AED 急救資訊網」。</p>
+      <div class="sources">${srcA('https://tw-aed.mohw.gov.tw/', '公共場所 AED 急救資訊網')}${srcA('https://www.119.gov.taipei/News_Content.aspx?n=6EEFD6ACA51B8E33&sms=87415A8B9CE81B16&s=173D1B9BEB12DDBA', '臺北市消防局・CPR 施救方法')}${srcA('https://www.disasterlearning.gov.taipei/tw/Knowledge/ugC_Knowledge_Detail.aspx?ID=124&TID=6', '臺北市消防局防災教育雲')}</div>`,
+    'firstaid-progress': () => `<p class="pop-kicker">受訓進度・市府統計截至 2026.10.22</p>
+      <p class="pop-quote">第一線員工 73.9%，距離 2027 年底 80% 目標還差 6.1 個百分點</p>
+      <div class="hs-bars">
+        <div><span>第一線接觸民眾的員工</span><i style="--v:73.9%;--goal:80%"></i><b>73.9%</b><small>17,220 名・目標 2026 年底 50%、2027 年底 80%</small></div>
+        <div><span>內勤員工</span><i style="--v:44.2%;--goal:50%"></i><b>44.2%</b><small>10,585 名・目標每年 50% 以上</small></div>
+      </div>
+      <div class="sources">${srcA('https://www.119.gov.taipei/News_Content.aspx?n=37B67E7640165BF9&sms=9FE100ABBC7FAE50&s=96BC6D1CB2BC4E50', '臺北市政府消防局・2026.10.28')}</div>
+      <div class="pop-actions"><button class="cta" data-go-theme="safety" data-go-item="safety-first-aid">看完整項目 →</button></div>`,
+  };
+  function showHotspot(key) {
+    const html = HOTSPOTS[key]?.();
+    if (!html) return;
+    tip.hidden = true;
+    pop.innerHTML = `<button class="pop-close" aria-label="關閉">×</button>${html}`;
+    pop.hidden = false;
+  }
+  let quaking = false;
+  function runQuake() {
+    if (!world || quaking) return;
+    quaking = true;
+    const cap = document.createElement('div');
+    cap.className = 'quake-cap';
+    cap.setAttribute('role', 'status');
+    document.body.append(cap);
+    const steps = ['地震了！', '趴下', '掩護：躲到桌子下、護住頭頸', '穩住：抓住桌腳，跟著桌子移動'];
+    steps.forEach((s, i) => setTimeout(() => { cap.innerHTML = `<b>${esc(s)}</b>`; }, i * 1400));
+    world.quake(6, () => {
+      quaking = false;
+      cap.innerHTML = `<b>演練結束</b><span>地震時不要急著往外跑，先就地「趴下、掩護、穩住」，等搖晃停止再移動。消防署也提醒：網傳的「黃金三角」避難法是錯誤觀念。</span>
+        <span class="sources">${srcA('https://www.storm.mg/article/221092', '風傳媒・消防署澄清（2017）')}</span><button type="button" class="quake-x">知道了</button>`;
+      cap.querySelector('.quake-x').addEventListener('click', () => cap.remove());
+      setTimeout(() => cap.remove(), 12000);
+    });
+  }
+
   // ---------- 政策關係：只收來源明說的關聯 ----------
   let linkData = null;
   function itemRef(ref) {

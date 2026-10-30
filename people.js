@@ -149,6 +149,9 @@ export function createCrowd(scene, capacity = 96) {
         out.lz = 1.6 + k * 1.1; out.rz = -1.6 - k * 1.1; out.sit = 1; out.llx = -1.5; out.lrx = -1.5;
         break;
       }
+      case 'duck': // 地震演練：趴下、雙手護頭
+        out.sit = 1; out.lean = 0.55; out.llx = -1.5; out.lrx = -1.5; out.lx = -2.5; out.rx = -2.5; out.lz = 0.5; out.rz = -0.5;
+        break;
       case 'salute':
         out.rx = -0.4; out.rz = -2.3;
         break;
@@ -182,6 +185,9 @@ export function createCrowd(scene, capacity = 96) {
     return m;
   }
 
+  // 全體暫時改做同一個動作（例如地震演練時一起趴下），null 恢復原本動作
+  let override = null;
+  function setOverride(a) { override = a; }
   function update(t) {
     // 只繪製到最後一個在場的人，空名額不送進 GPU
     let maxI = -1;
@@ -191,8 +197,9 @@ export function createCrowd(scene, capacity = 96) {
       if (!p) continue;
       const tt = t * p.speed;
       // 沿路徑移動（被點選時停下來，hold 期間不走）
-      if (p.hold) p.holdT = (p.holdT ?? tt) ; else if (p.holdT !== undefined) { p.pathT -= ((tt - p.holdT) * (p.anim === 'jog' ? 0.5 : 0.28)) / (p.pathLen || 1); p.holdT = undefined; }
-      if (p.path && p.pathLen > 0 && !p.hold) {
+      const held = p.hold || !!override;
+      if (held) p.holdT = (p.holdT ?? tt) ; else if (p.holdT !== undefined) { p.pathT -= ((tt - p.holdT) * (p.anim === 'jog' ? 0.5 : 0.28)) / (p.pathLen || 1); p.holdT = undefined; }
+      if (p.path && p.pathLen > 0 && !held) {
         let d = ((tt * (p.anim === 'jog' ? 0.5 : 0.28) + p.pathT * p.pathLen) % p.pathLen + p.pathLen) % p.pathLen;
         for (const sg of p.segs) {
           if (d <= sg.len) {
@@ -205,7 +212,7 @@ export function createCrowd(scene, capacity = 96) {
           d -= sg.len;
         }
       }
-      const P = pose(p.hold ? 'wave' : p.anim, tt, p.phase);
+      const P = pose(override || (p.hold ? 'wave' : p.anim), tt, p.phase);
       const sitDrop = P.sit * 0.14;
       e.set(P.lean, p.rot, P.sway, 'YXZ');
       q.setFromEuler(e);
@@ -249,5 +256,5 @@ export function createCrowd(scene, capacity = 96) {
   }
 
   const alive = (p) => !!p && people[p.i] === p;
-  return { add, remove, update, nearest, alive, each: (fn) => people.forEach((p) => p && fn(p)), count: () => people.filter(Boolean).length };
+  return { add, remove, update, setOverride, nearest, alive, each: (fn) => people.forEach((p) => p && fn(p)), count: () => people.filter(Boolean).length };
 }

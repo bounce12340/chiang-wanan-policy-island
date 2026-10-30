@@ -54,7 +54,7 @@ function rng(seed) {
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge, onSelectFuture }) {
+export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge, onSelectFuture, onSelectHotspot }) {
   const isSmall = window.matchMedia('(max-width: 760px)').matches;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -817,6 +817,20 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         return p || { handR: new THREE.Vector3(), handL: new THREE.Vector3() };
       },
       anim(fn) { st.anims.push(fn); },
+      // 小舞台上可點的提示牌（例如 AED、進度板），點了由外部顯示說明卡
+      hotspot(x, y, z, text, key) {
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'hotspot-pill';
+        el.textContent = text;
+        el.addEventListener('pointerdown', (e) => e.stopPropagation());
+        el.addEventListener('click', (e) => { e.stopPropagation(); onSelectHotspot?.(key); });
+        const obj = new CSS2DObject(el);
+        obj.position.set(x, y, z);
+        content.add(obj);
+        st.pills.push(obj);
+        return obj;
+      },
       toLocal(v) { return content.worldToLocal(v.clone()); },
       attach(mesh, person, hand = 'handR') {
         st.anims.push(() => { mesh.position.copy(content.worldToLocal(person[hand].clone())); });
@@ -830,6 +844,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     wantedStage = null;
     if (!stage) return;
     stage.people.forEach((p) => crowd.remove(p));
+    stage.pills.forEach((o) => o.parent?.remove(o));
     scene.remove(stage.root);
     stage.root.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
     stage.ownMaterials.forEach((m) => m.dispose());
@@ -874,7 +889,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const content = new THREE.Group();
     content.position.y = STAGE_TOP;
     root.add(content);
-    stage = { root, content, themeId, itemId, people: [], anims: [], ownMaterials: [], t0: elapsed, beam };
+    stage = { root, content, themeId, itemId, people: [], anims: [], ownMaterials: [], pills: [], t0: elapsed, beam };
     root.updateMatrixWorld(true);
     try {
       build(makeKit(stage, isle.theme.color), opts);
@@ -1916,8 +1931,25 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     syncPledges(elapsed);
     syncLinks(elapsed);
     syncFuture(elapsed);
+    // 地震演練：只在繪製時暫時晃動鏡頭，畫完立刻還原，不影響視角控制
+    if (quake.until) {
+      const left = quake.until - performance.now() / 1000;
+      if (left <= 0) { quake.until = 0; crowd.setOverride(null); quake.done?.(); }
+      else {
+        const a = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.35 * Math.min(1, left / 1.5);
+        quake.off.set((Math.random() - 0.5) * a, (Math.random() - 0.5) * a * 0.6, (Math.random() - 0.5) * a);
+        camera.position.add(quake.off);
+      }
+    }
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
+    if (quake.until) camera.position.sub(quake.off);
+  }
+  const quake = { until: 0, off: new THREE.Vector3(), done: null };
+  function startQuake(seconds = 6, done) {
+    quake.until = performance.now() / 1000 + seconds;
+    quake.done = done;
+    crowd.setOverride('duck');
   }
   renderer.setAnimationLoop(frame);
   // 分頁切到背景時完全停止
@@ -1971,5 +2003,6 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     showBubble, hideBubble, onBubbleGone: (fn) => { onBubbleGone = fn; }, setNight, setTimeOfDay, getTimeOfDay: () => todKey,
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
     setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
+    quake: startQuake,
   };
 }

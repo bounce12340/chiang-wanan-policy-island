@@ -144,6 +144,22 @@ for (const [name, opts] of [
   await ctx.close();
 }
 
+// 安全韌性島：小舞台提示牌與地震演練
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/#/safety/safety-first-aid`, { waitUntil: 'load' });
+  await page.waitForSelector('.hotspot-pill', { timeout: 30000 });
+  await page.evaluate(() => document.querySelector('.hotspot-pill').click());
+  check(/叫、叫、壓、電/.test(await page.$eval('#pledge-pop', (e) => (e.hidden ? '' : e.textContent))), `safety: 點 AED 提示牌顯示急救口訣`);
+  await page.evaluate(() => { document.getElementById('pledge-pop').hidden = true; document.querySelector('[data-quake]').click(); });
+  await page.waitForFunction(() => /演練結束/.test(document.querySelector('.quake-cap')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
+  check(/演練結束/.test(await page.$eval('.quake-cap', (e) => e.textContent).catch(() => '')) && errors.length === 0, `safety: 地震演練可完整執行${errors.length ? ' ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 // 上次造訪後的新內容：模擬上一次造訪只看過一項，應提示新增
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });

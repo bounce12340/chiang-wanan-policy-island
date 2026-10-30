@@ -44,6 +44,7 @@ The site's interface and content are in Traditional Chinese.
 - **Policy island passport (`#/passport`):** stamps for visiting each island, each feature page and each game, with two badges; stored only in the visitor's browser and shareable
 - **Saved list:** star any item or pledge; the list lives only in the visitor's browser and can be shared as a link (`#/saved/<ids>`) that the recipient can import
 - **What's new since your last visit:** the browser remembers which items and statuses it saw last time and flags new items and status changes with a badge and a summary on the home card
+- **Safety island extras:** on the first-aid training scene, tap the AED for the Taipei Fire Department's CPR+AED steps (叫、叫、壓、電, 100–120 compressions a minute, 5–6 cm deep) with a link to the national AED locator, or tap the progress board for the training numbers; the safety panel also has an earthquake drill where the camera shakes and every resident does "drop, cover, hold on"
 - **Swipe** left or right on the island panel (mobile) to move to the previous or next island
 - **Deep links** to any island, item, view or pledge filter, e.g. `#/transport`, `#/housing/housing-happy`, `#/pledges/p22-media-01`, `#/pledges?status=not_done&cat=勞工` or `#/ledger`
 - **Data:** all content lives in [`data/policies.json`](data/policies.json), current as of **2026-10-23**
