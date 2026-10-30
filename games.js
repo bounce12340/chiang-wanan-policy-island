@@ -21,12 +21,14 @@ export function initGames(ctx) {
   const body = $('#game-body');
   dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
   dlg.addEventListener('close', () => {
-    if (/^#\/(games|sort|whomayor|daily|passport)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    ctx.pause?.(false);
+    if (/^#\/(games|sort|whomayor|daily|passport|cpr)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   });
   function open(title, hash) {
     head.textContent = title;
     body.innerHTML = '<p class="qz-ask">載入中…</p>';
     if (!dlg.open) dlg.showModal();
+    ctx.pause?.(true); // 玩遊戲時暫停背後的 3D 繪製，手機比較順、按壓計時也比較準
     dlg.scrollTop = 0;
     history.replaceState(null, '', `#/${hash}`);
   }
@@ -122,13 +124,14 @@ export function initGames(ctx) {
         ${card('quiz', '🎯', '政見猜猜看', '10 條 2022 政見，猜猜查證後的狀態')}
         ${card('sort', '🔢', '排排看', '把 5 件施政大事依發生先後排好')}
         ${card('mayor', '🏛️', '這是哪位市長做的？', '1994 年以來五任市長，每人各 2 題')}
+        ${card('cpr', '❤️', '按壓節奏挑戰', '跟著節奏按 10 秒，記住 CPR 每分鐘 100–120 下')}
         ${card('passport', '🛂', '施政島護照', '逛島、看專題、玩遊戲就蓋章', `<em class="gm-tag">${n}/${STAMPS.length}</em>`)}
       </div>`;
     body.onclick = (e) => {
       const k = e.target.closest('[data-game]')?.dataset.game;
       if (!k) return;
       if (k === 'quiz') { dlg.close(); ctx.openQuiz(); return; }
-      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport })[k]();
+      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr })[k]();
     };
   }
 
@@ -359,6 +362,78 @@ export function initGames(ctx) {
     };
   }
 
+  // =========================================================
+  // 按壓節奏挑戰：跟著節拍按 10 秒，看速度有沒有落在每分鐘 100–120 下
+  // （依臺北市消防局「叫、叫、壓、電」：每分鐘 100–120 次、每秒約 2 次）
+  // =========================================================
+  function openCpr() {
+    open('按壓節奏挑戰', 'cpr');
+    const LO = 100, HI = 120, DUR = 10000;
+    let taps = [], t0 = 0, timer = 0, raf = 0, guide = true;
+    const bpmOf = (arr) => {
+      if (arr.length < 2) return 0;
+      const iv = [];
+      for (let i = 1; i < arr.length; i++) iv.push(arr[i] - arr[i - 1]);
+      return Math.round(60000 / (iv.reduce((a, b) => a + b, 0) / iv.length));
+    };
+    const pct = (b) => Math.max(0, Math.min(100, ((b - 60) / 100) * 100)); // 量表 60–160
+    body.innerHTML = `
+      <p class="qz-ask">胸部按壓要「用力壓、快快壓」，每分鐘 <b>100–120 下</b>（每秒約 2 下）。按下面的大按鈕（或空白鍵）開始，跟著節奏連續按 10 秒。</p>
+      <div class="cpr-gauge" aria-hidden="true"><i class="cpr-zone" style="left:${pct(LO)}%;width:${pct(HI) - pct(LO)}%"></i><i class="cpr-needle"></i>
+        <span style="left:0">60</span><span style="left:${pct(LO)}%">100</span><span style="left:${pct(HI)}%">120</span><span style="left:100%">160</span></div>
+      <p class="cpr-live" aria-live="polite">尚未開始</p>
+      <button type="button" class="cpr-pad" data-pad><span>按壓</span></button>
+      <label class="cpr-guide"><input type="checkbox" checked data-guide> 顯示 110 下／分的節拍提示</label>
+      <p class="qz-note">這只是節奏練習。實際按壓還要壓到 5–6 公分深、讓胸部回彈、不要中斷；請參加正式的 CPR＋AED 訓練。來源：臺北市消防局「CPR 施救方法」。</p>`;
+    const pad = body.querySelector('[data-pad]');
+    const live = body.querySelector('.cpr-live');
+    const needle = body.querySelector('.cpr-needle');
+    const beat = () => {
+      // 節拍提示：每 545 毫秒（約 110 下／分）閃一下
+      const now = performance.now();
+      pad.classList.toggle('is-beat', guide && ((now % 545) < 110));
+      if (t0) {
+        const left = Math.max(0, DUR - (now - t0));
+        const b = bpmOf(taps.slice(-5));
+        live.innerHTML = `剩 <b>${(left / 1000).toFixed(1)}</b> 秒・目前 <b>${b || '—'}</b> 下／分`;
+        needle.style.left = `${pct(b || 60)}%`;
+      }
+      raf = requestAnimationFrame(beat);
+    };
+    raf = requestAnimationFrame(beat);
+    const finish = () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey);
+      const b = bpmOf(taps);
+      const iv = taps.slice(1).map((x, i) => 60000 / (x - taps[i]));
+      const good = iv.length ? Math.round((iv.filter((v) => v >= LO && v <= HI).length / iv.length) * 100) : 0;
+      const verdict = !b ? '沒有偵測到按壓' : b < LO ? '太慢了，再快一點' : b > HI ? '太快了，放慢一點' : '節奏剛好！';
+      body.dataset.bpm = b;
+      body.innerHTML = `
+        <p class="qz-score"><b>${b || 0}</b><span>下／分</span></p>
+        <p class="qz-ask"><b>${verdict}</b>　共按了 ${taps.length} 下，${good}% 的按壓落在每分鐘 100–120 下。</p>
+        <div class="cpr-gauge" aria-hidden="true"><i class="cpr-zone" style="left:${pct(LO)}%;width:${pct(HI) - pct(LO)}%"></i><i class="cpr-needle" style="left:${pct(b || 60)}%"></i>
+          <span style="left:0">60</span><span style="left:${pct(LO)}%">100</span><span style="left:${pct(HI)}%">120</span><span style="left:100%">160</span></div>
+        <p class="qz-note">記住口訣「叫、叫、壓、電」：確認意識、撥 119 並請人拿 AED、胸部按壓、依 AED 指示電擊。附近的 AED 可以查 <a href="https://tw-aed.mohw.gov.tw/" target="_blank" rel="noopener noreferrer">公共場所 AED 急救資訊網</a>。</p>
+        <div class="sv-actions"><button type="button" class="cta" data-c="again">再試一次</button><button type="button" class="cta cta-2" data-c="share">分享</button></div>`;
+    };
+    const press = () => {
+      if (!t0) { t0 = performance.now(); timer = setTimeout(finish, DUR); }
+      taps.push(performance.now());
+      pad.classList.remove('is-hit'); void pad.offsetWidth; pad.classList.add('is-hit');
+    };
+    const onKey = (e) => { if ((e.code === 'Space' || e.key === 'Enter') && dlg.open && body.contains(pad)) { e.preventDefault(); if (!e.repeat) press(); } };
+    document.addEventListener('keydown', onKey);
+    pad.addEventListener('pointerdown', (e) => { e.preventDefault(); press(); });
+    body.querySelector('[data-guide]').addEventListener('change', (e) => { guide = e.target.checked; });
+    body.onclick = (e) => {
+      const c = e.target.closest('[data-c]')?.dataset.c;
+      if (c === 'again') openCpr();
+      if (c === 'share') share('按壓節奏挑戰｜臺北施政島', `我在「臺北施政島」的 CPR 按壓節奏挑戰按出每分鐘 ${body.dataset.bpm} 下（建議 100–120 下）。你也來試試，順便記住「叫、叫、壓、電」：`, 'cpr');
+    };
+    dlg.addEventListener('close', () => { cancelAnimationFrame(raf); clearTimeout(timer); document.removeEventListener('keydown', onKey); }, { once: true });
+  }
+
   syncPassportBtn();
-  return { openHub, openSort, openMayor, openDaily, openPassport, stamp };
+  return { openHub, openSort, openMayor, openDaily, openPassport, openCpr, stamp };
 }

@@ -525,7 +525,7 @@ export const SCENES = {
   // ===== 安全韌性 =====
   police(k) {
     building(k, 0, -0.9, 1.8, 1.0, 0.6, '#f1e9dd', { floors: 2, roof: '#2f4f8a' });
-    for (let i = 0; i < 3; i++) k.person({ x: -0.6 + i * 0.6, z: 0.3, anim: 'salute', shirt: '#2f4f8a', pants: '#1f2a44' });
+    for (let i = 0; i < 3; i++) k.person({ x: -0.6 + i * 0.6, z: 0.3, anim: 'salute', holdAnim: 'salute', shirt: '#2f4f8a', pants: '#1f2a44' });
     const car = k.group(1.2, 0, 0.9, 0.3);
     k.box(0.8, 0.3, 0.4, '#ffffff', 0, 0.06, 0, { parent: car });
     k.box(0.5, 0.2, 0.38, '#2f4f8a', 0, 0.3, 0, { parent: car });
@@ -537,8 +537,19 @@ export const SCENES = {
     k.box(1.6, 0.55, 0.6, '#d64545', 0, 0.08, 0, { parent: truck });
     k.box(1.2, 0.08, 0.1, '#c9c4b8', 0, 0.7, 0, { parent: truck, rz: 0.2 });
     k.box(1.2, 0.04, 0.62, '#f2c14e', 0, 0.35, 0, { parent: truck });
-    const ff = k.person({ x: 0.7, z: 0.5, anim: 'give', shirt: '#2b2f45', rot: 0.6 });
-    k.person({ x: 0.3, z: 0.7, anim: 'carry', shirt: '#2b2f45', rot: 0.6 });
+    const ff = k.person({ x: 0.7, z: 0.5, anim: 'give', holdAnim: 'salute', shirt: '#2b2f45', rot: 0.6 });
+    k.person({ x: 0.3, z: 0.7, anim: 'carry', holdAnim: 'salute', shirt: '#2b2f45', rot: 0.6 });
+    // 夜晚（含黃昏）消防車警示燈閃爍、分隊車庫亮燈
+    const lightR = k.sphere(0.07, '#ff4040', -0.6, 0.72, 0, { parent: truck, glow: true, dyn: true });
+    const lightB = k.sphere(0.07, '#4f8dff', -0.45, 0.72, 0, { parent: truck, glow: true, dyn: true });
+    const garage = k.box(1.0, 0.7, 0.04, '#ffe9a8', -0.5, 0, -1.25, { glow: true, dyn: true });
+    k.box(1.2, 0.85, 0.3, '#c9c4b8', -0.5, 0, -1.45);
+    k.anim((t) => {
+      const n = k.night();
+      lightR.visible = n && Math.sin(t * 9) > 0;
+      lightB.visible = n && Math.sin(t * 9) <= 0;
+      garage.visible = n;
+    });
     for (let i = 0; i < 6; i++) {
       const d = k.sphere(0.05, '#6fb7e8', 0, 0, 0, { dyn: true });
       k.anim((t) => { const f = (t * 1.2 + i / 6) % 1; const h = k.toLocal(ff.handR); d.position.set(h.x + f * 1.1, h.y + f * 0.4 - f * f * 0.9, h.z - f * 0.6); });
@@ -554,7 +565,12 @@ export const SCENES = {
     }
     k.sphere(0.4, '#9aa3b5', -0.4, 2.5, 0.2);
     k.sphere(0.5, '#9aa3b5', 0.2, 2.6, 0.2);
+    // 雨水在地面積起來，再慢慢流進滯洪管涵退去
+    const water = k.box(2.6, 0.2, 0.55, '#4f9be0', 0, 0, 0.35, { fade: true, dyn: true });
+    water.material.opacity = 0.7;
+    k.anim((t) => { const f = (Math.sin(t * 0.5) + 1) / 2; water.scale.y = 0.05 + f * 0.95; water.position.y = water.scale.y * 0.1; });
     k.person({ x: 0.8, z: 0.8, anim: 'point', shirt: '#f08c3a', rot: -2.6 });
+    k.hotspot(0, 1.25, -0.2, '💧 3.2 萬噸有多大？', 'flood');
   },
   inspection(k) {
     building(k, -0.3, -0.7, 1.2, 1.8, 0.9, '#c9b896', { floors: 5 });

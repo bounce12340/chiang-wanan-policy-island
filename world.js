@@ -817,6 +817,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         return p || { handR: new THREE.Vector3(), handL: new THREE.Vector3() };
       },
       anim(fn) { st.anims.push(fn); },
+      night: () => todKey === 'night' || todKey === 'dusk',
       // 小舞台上可點的提示牌（例如 AED、進度板），點了由外部顯示說明卡
       hotspot(x, y, z, text, key) {
         const el = document.createElement('button');

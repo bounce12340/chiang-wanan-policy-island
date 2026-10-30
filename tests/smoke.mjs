@@ -157,6 +157,16 @@ for (const [name, opts] of [
   await page.evaluate(() => { document.getElementById('pledge-pop').hidden = true; document.querySelector('[data-quake]').click(); });
   await page.waitForFunction(() => /演練結束/.test(document.querySelector('.quake-cap')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
   check(/演練結束/.test(await page.$eval('.quake-cap', (e) => e.textContent).catch(() => '')) && errors.length === 0, `safety: 地震演練可完整執行${errors.length ? ' ' + errors.join(' | ') : ''}`);
+  // 按壓節奏挑戰：以 520 毫秒間隔按壓，應算出約 115 下／分並判定「剛好」
+  await page.evaluate(() => { location.hash = '#/cpr'; });
+  await page.waitForSelector('#game .cpr-pad', { timeout: 8000 });
+  await page.evaluate(() => new Promise((res) => {
+    const pad = document.querySelector('#game .cpr-pad'); let n = 0;
+    const id = setInterval(() => { pad.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); if (++n >= 22) { clearInterval(id); res(); } }, 520);
+  }));
+  await page.waitForSelector('#game .qz-score', { timeout: 8000 }).catch(() => {});
+  const bpm = +(await page.$eval('#game .qz-score b', (e) => e.textContent).catch(() => 0));
+  check(bpm >= 100 && bpm <= 125, `safety: 按壓節奏挑戰計算正確（${bpm} 下／分）`);
   await ctx.close();
 }
 

@@ -709,6 +709,7 @@ async function boot() {
         <li><b>電</b>拿到 AED 後打開電源，依語音指示操作</li>
       </ol>
       <p class="pop-sum">這只是重點提醒，不能取代實際訓練；遇到緊急狀況請立刻撥打 119。附近哪裡有 AED，可以查衛福部的「公共場所 AED 急救資訊網」。</p>
+      <div class="pop-actions"><button class="cta" data-cpr>❤️ 試試按壓節奏（10 秒）</button></div>
       <div class="sources">${srcA('https://tw-aed.mohw.gov.tw/', '公共場所 AED 急救資訊網')}${srcA('https://www.119.gov.taipei/News_Content.aspx?n=6EEFD6ACA51B8E33&sms=87415A8B9CE81B16&s=173D1B9BEB12DDBA', '臺北市消防局・CPR 施救方法')}${srcA('https://www.disasterlearning.gov.taipei/tw/Knowledge/ugC_Knowledge_Detail.aspx?ID=124&TID=6', '臺北市消防局防災教育雲')}</div>`,
     'firstaid-progress': () => `<p class="pop-kicker">受訓進度・市府統計截至 2026.10.22</p>
       <p class="pop-quote">第一線員工 73.9%，距離 2027 年底 80% 目標還差 6.1 個百分點</p>
@@ -718,6 +719,15 @@ async function boot() {
       </div>
       <div class="sources">${srcA('https://www.119.gov.taipei/News_Content.aspx?n=37B67E7640165BF9&sms=9FE100ABBC7FAE50&s=96BC6D1CB2BC4E50', '臺北市政府消防局・2026.10.28')}</div>
       <div class="pop-actions"><button class="cta" data-go-theme="safety" data-go-item="safety-first-aid">看完整項目 →</button></div>`,
+  };
+  HOTSPOTS.flood = () => {
+    const it = byId.get('safety')?.items.find((i) => i.id === 'safety-flood');
+    return `<p class="pop-kicker">敦北地下大排滯洪工程</p>
+      <p class="pop-quote">3.2 萬噸的水，大約等於 13 座奧運標準泳池</p>
+      <p class="pop-sum">以每座泳池 50 × 25 × 2 公尺＝2,500 立方公尺、1 噸水約 1 立方公尺換算：32,000 ÷ 2,500 ≈ 12.8 座。大雨時先把雨水暫存在地下管涵，減少路面積水，雨停後再慢慢排出。</p>
+      <ul class="hs-facts">${(it?.facts || []).map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
+      <div class="sources">${(it?.sources || []).map((s) => srcA(safeUrl(s.url), sourceLabel(s))).join('')}</div>
+      <div class="pop-actions"><button class="cta" data-go-theme="safety" data-go-item="safety-flood">看完整項目 →</button></div>`;
   };
   function showHotspot(key) {
     const html = HOTSPOTS[key]?.();
@@ -765,6 +775,7 @@ async function boot() {
     pop.hidden = false;
   }
   pop.addEventListener('click', (e) => {
+    if (e.target.closest('[data-cpr]')) { pop.hidden = true; games?.openCpr(); return; }
     const g = e.target.closest('[data-go-theme]');
     if (!g) return;
     pop.hidden = true;
@@ -913,6 +924,7 @@ async function boot() {
     esc, fmtDate, toast, STATUS, allItems, themes,
     setView, openTheme, loadPledges, loadMayors,
     openQuiz: () => extras.openQuiz(),
+    pause: (p) => world?.setPaused(p || view !== 'island'),
     openPledge: (id) => { setView('pledges'); ensurePledges().then(() => focusPledge(pledgesRoot, id)); history.replaceState(null, '', `#/pledges/${id}`); },
   });
   $('#btn-games').addEventListener('click', () => games.openHub());
@@ -928,6 +940,7 @@ async function boot() {
     if (id === 'whomayor') { games.openMayor(); return; }
     if (id === 'daily') { games.openDaily(); return; }
     if (id === 'passport') { games.openPassport(); return; }
+    if (id === 'cpr') { games.openCpr(); return; }
     if (id === 'who') { extras.setWho(itemId); return; }
     if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
     if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }

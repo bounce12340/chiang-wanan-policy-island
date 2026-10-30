@@ -58,7 +58,7 @@ export function createCrowd(scene, capacity = 96) {
     const p = {
       i, anchor,
       x: o.x ?? 0, y: o.y ?? 0, z: o.z ?? 0, rot: o.rot ?? 0,
-      anim: o.anim || 'idle', phase: o.phase ?? Math.random() * 6,
+      anim: o.anim || 'idle', holdAnim: o.holdAnim || 'wave', phase: o.phase ?? Math.random() * 6,
       speed: (o.speed ?? 1) * (senior ? 0.6 : 1),
       scale: (o.scale ?? 1) * (o.kid ? 0.68 : 1),
       path: o.path || null, pathT: o.pathT ?? 0, pathLen: 0,
@@ -212,7 +212,7 @@ export function createCrowd(scene, capacity = 96) {
           d -= sg.len;
         }
       }
-      const P = pose(override || (p.hold ? 'wave' : p.anim), tt, p.phase);
+      const P = pose(override || (p.hold ? p.holdAnim : p.anim), tt, p.phase);
       const sitDrop = P.sit * 0.14;
       e.set(P.lean, p.rot, P.sway, 'YXZ');
       q.setFromEuler(e);
