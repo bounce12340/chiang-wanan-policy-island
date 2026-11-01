@@ -60,6 +60,7 @@ As of that date, no complete re-election platform had been published, so the re-
 
 ## Tech
 
+- Baked ambient occlusion: when static meshes are merged, each object's bounding box becomes an occluder and every vertex casts 12 short hemisphere rays against them (bucketed in a 1-unit grid); the result is a per-vertex `aOcc` attribute that darkens indirect light in corners, under eaves and where buildings meet the ground. It runs in 10 ms slices after load (about 0.2 s of total work on a desktop). Tall boxes are tagged as buildings and get faint floor lines and per-panel tint in the shader. The approach (approximate sky visibility from simple occluder primitives) follows [Athenaion](https://github.com/Leonxlnx/athenaion) by Leon Lin (MIT); the code here is a separate implementation ([`ao.js`](ao.js))
 - Native ES modules, no build step at deploy time
 - [Three.js](https://threejs.org/) r180 (MIT), as a tree-shaken bundle in `vendor/three-lite.js` (529 KB, 136 KB gzipped)
 - All 3D models are generated in code; there are no external model files

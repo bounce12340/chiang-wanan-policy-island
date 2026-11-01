@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createCrowd } from './people.js';
+import { aoMaterial, scheduleAO, aoPending, aoStats } from './ao.js';
 
 export const STATUS_COLORS = {
   done: 0x2e9e5b,
@@ -122,6 +123,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   const glow = (color, base = 0) => {
     const m = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: base, flatShading: true, roughness: 0.6 });
     m.userData.base = base;
+    m.userData.noAO = true; // 會發光的材質不加遮蔽
     glowMats.push(m);
     return m;
   };
@@ -136,19 +138,33 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   const dyn = (o) => { o.userData.dynamic = true; return o; };
 
   // 把一個群組底下所有靜態網格依材質合併：數百個小物件 → 每種材質一次繪製
-  function mergeStatic(group) {
+  // 同時收集每個物件的包圍盒當遮擋體，合併後在空閒時烘焙環境光遮蔽（見 ao.js）
+  function mergeStatic(group, { ao = true } = {}) {
     group.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
     const buckets = new Map();
     const victims = [];
+    const boxes = [];
     const collect = (o) => {
       if (o.userData.dynamic) return;
       if (o.isMesh && !o.isInstancedMesh && o.material.visible !== false) {
+        const isBox = o.geometry.type === 'BoxGeometry';
         let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
         for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
         g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
-        if (!buckets.has(o.material)) buckets.set(o.material, { geos: [], cast: false });
-        const b = buckets.get(o.material);
+        const material = ao ? aoMaterial(o.material) : o.material;
+        if (ao) {
+          g.computeBoundingBox();
+          const { min, max } = g.boundingBox;
+          const dx = max.x - min.x, dy = max.y - min.y, dz = max.z - min.z;
+          // 太薄的（窗戶、標線）不當遮擋體
+          if (Math.min(dx, dy, dz) > 0.05) boxes.push([min.x, min.y, min.z, max.x, max.y, max.z]);
+          // 高的方塊視為建築，牆面加樓層線
+          const fac = isBox && dy > 0.8 && !o.material.userData.noAO ? 1 : 0;
+          g.setAttribute('aFac', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(fac), 1));
+        }
+        if (!buckets.has(material)) buckets.set(material, { geos: [], cast: false });
+        const b = buckets.get(material);
         b.geos.push(g);
         b.cast ||= o.castShadow;
         victims.push(o);
@@ -159,13 +175,16 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     victims.forEach((o) => { o.parent.remove(o); o.geometry.dispose(); });
     const merged = [];
     buckets.forEach(({ geos, cast }, material) => {
-      const m = new THREE.Mesh(mergeGeometries(geos, false), material);
+      const geo = mergeGeometries(geos, false);
+      if (material.userData.aoVariant) geo.setAttribute('aOcc', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count), 1));
+      const m = new THREE.Mesh(geo, material);
       geos.forEach((g) => g.dispose());
       m.castShadow = cast;
       m.receiveShadow = true;
       group.add(m);
       merged.push(m);
     });
+    if (ao) scheduleAO(merged.filter((m) => m.geometry.getAttribute('aOcc')), boxes);
     return merged;
   }
 
@@ -1087,7 +1106,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       s.scale.y = 0.6;
       c.add(s);
     }
-    mergeStatic(c).forEach((m) => { m.castShadow = false; m.receiveShadow = false; });
+    mergeStatic(c, { ao: false }).forEach((m) => { m.castShadow = false; m.receiveShadow = false; });
     c.position.set(-70 + crand() * 140, 24 + crand() * 8, -70 + crand() * 90);
     c.scale.setScalar(1.4 + crand());
     c.userData.speed = 0.6 + crand() * 0.6;
@@ -1993,6 +2012,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     };
   }
 
+  window.__aoPending = aoPending; window.__aoStats = aoStats; // 測試用：環境光遮蔽還有幾個網格在排隊
   // 開場：從遠處推近
   flyTo(HOME.pos, HOME.target, 2.4);
   applyPalette(cur);
