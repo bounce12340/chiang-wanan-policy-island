@@ -505,12 +505,25 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     },
     culture(g, c) {
       const accent = T(c);
-      const dome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), T('#e7e9ee'));
-      dome.scale.set(1, 0.55, 1);
-      dome.position.set(0.6, 0.2, 0.3);
+      // 大巨蛋：橢圓形低矮銀色屋頂、同心環肋、頂部天窗，底部一圈玻璃立面與彩色基座
+      // 依 Populous 介紹：自由曲面雙曲率屋頂、鈦金屬包覆（銀灰色）
+      const domeMat = T('#d9dce1');
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(1.5, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), domeMat);
+      dome.scale.set(1.08, 0.5, 0.92);
+      dome.position.set(0.6, 0.42, 0.3);
       dome.castShadow = true;
       g.add(dome);
-      g.add(cyl(1.6, 1.62, 0.22, 24, accent, 0.6, 0, 0.3));
+      [0.95, 0.72, 0.45].forEach((k) => {
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(1.5 * k, 0.018, 4, 40), T('#c6cad0'));
+        rib.rotation.x = Math.PI / 2;
+        rib.scale.set(1.08, 0.92, 1);
+        rib.position.set(0.6, 0.42 + 0.75 * Math.sqrt(1 - k * k) - 0.02, 0.3);
+        g.add(rib);
+      });
+      const facade = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.62, 0.22, 32), M.glass);
+      facade.scale.set(1.08, 1, 0.92); facade.position.set(0.6, 0.31, 0.3); g.add(facade);
+      const plinth = cyl(1.62, 1.66, 0.2, 32, accent, 0.6, 0, 0.3);
+      plinth.scale.set(1.08, 1, 0.92); g.add(plinth);
       // 美術館：柱廊
       g.add(box(1.8, 0.14, 1.0, M.white, -1.4, 0, -1.4));
       for (let i = 0; i < 4; i++) g.add(cyl(0.07, 0.07, 0.8, 6, M.white, -2.1 + i * 0.46, 0.14, -1.0));
@@ -1205,6 +1218,24 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const C = (hex) => mat(hex);
     const red = C('#c4473a'), gold = C('#e2b23c'), blueRoof = C('#2f5aa8'), teal = C('#7cc7b8'), water = C('#7fb8d6');
     const sq = (rt, rb, h, m, x, y, z) => { const o = cyl(rt, rb, h, 4, m, x, y, z); o.rotation.y = Math.PI / 4; return o; };
+    // 凸多邊形剖面（x, y）沿 z 擠出成多面體，用來做北流這類斜屋頂量體
+    const prism = (pts, depth, m) => {
+      const pos = [];
+      const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+      const h = depth / 2;
+      for (let i = 0; i < pts.length; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % pts.length];
+        pos.push(cx, cy, h, ax, ay, h, bx, by, h); // 正面
+        pos.push(cx, cy, -h, bx, by, -h, ax, ay, -h); // 背面
+        pos.push(ax, ay, h, ax, ay, -h, bx, by, -h, ax, ay, h, bx, by, -h, bx, by, h); // 側面
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.computeVertexNormals();
+      const mesh = new THREE.Mesh(g, m);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      return mesh;
+    };
     const placeTrees = (root, pts) => { root.updateMatrixWorld(true); pts.forEach(([x, z]) => treeSpots.push(root.localToWorld(new THREE.Vector3(x, TOP * 0.38, z)))); };
 
     const LANDMARKS = [
@@ -1246,12 +1277,31 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), glow('#ff8a4a', 0.5)); l.position.set(-0.85 + i * 0.26, 1.18, 0.95); t.add(l); }
       } },
       { district: '南港', name: '臺北流行音樂中心', deg: 96, build(t) {
-        const hall = box(2.1, 1.5, 1.4, M.white, 0, 0, -0.2);
-        t.add(hall);
-        const wedge = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1.0, 2.1, 3), M.white);
-        wedge.rotation.set(0, 0, Math.PI / 2); wedge.scale.set(1, 1, 0.7); wedge.position.set(0, 1.5, -0.2); t.add(wedge);
-        for (let i = 0; i < 4; i++) t.add(box(2.12, 0.05, 0.02, cyanMat, 0, 0.3 + i * 0.3, 0.51));
-        t.add(box(0.9, 0.6, 0.8, M.dark, 0.9, 0, 0.9));
+        // 依建築師 RUR 的描述：表演廳是「蚌殼形、屋頂如摺紙般打褶」，屋頂鋁板帶金色光澤；
+        // 西端是方塊狀的音樂文化館，右側是頂覆穿孔不鏽鋼板的產業區，以人行天橋相連；整區坐在像地形的平台上
+        const shell = C('#c8ccd2'), goldRoof = C('#d2a85a'), steel = C('#b9bec6');
+        t.add(box(3.0, 0.14, 2.1, M.pave, 0.1, 0, -0.1)); // 平台
+        t.add(box(1.8, 0.55, 1.25, shell, -0.05, 0.14, -0.35)); // 表演廳主體
+        t.add(box(1.8, 0.3, 0.05, M.glass, -0.05, 0.14, 0.29)); // 大廳玻璃
+        // 打褶屋頂：8 道摺，整體中間高、兩側低（蚌殼輪廓）
+        const N = 8, W = 2.0, x0 = -1.05;
+        for (let i = 0; i < N; i++) {
+          const xa = x0 + (W / N) * i, xb = xa + W / N, xm = (xa + xb) / 2;
+          const arch = (u) => 0.38 * Math.sin(Math.PI * (u - x0) / W);
+          const ya = arch(xa), yb = arch(xb), yr = arch(xm) + (i % 2 ? 0.035 : 0.09);
+          const pleat = prism([[xa, 0], [xb, 0], [xb, yb], [xm, yr], [xa, ya]], 1.4, i % 2 ? goldRoof : C('#e0bd72'));
+          pleat.position.set(0, 0.69, -0.35);
+          t.add(pleat);
+        }
+        // 音樂文化館（西端方塊，東側有玻璃梯間）
+        t.add(box(0.75, 1.05, 0.75, shell, -1.2, 0.14, 0.55));
+        t.add(box(0.05, 0.95, 0.5, M.glass, -0.81, 0.18, 0.55));
+        // 產業區：低矮量體＋穿孔不鏽鋼屋頂
+        t.add(box(0.9, 0.45, 0.8, shell, 1.15, 0.14, 0.75));
+        const perf = box(1.0, 0.06, 0.9, steel, 1.15, 0.59, 0.75); t.add(perf);
+        for (let i = 0; i < 4; i++) t.add(box(0.9, 0.012, 0.03, M.dark, 1.15, 0.655, 0.42 + i * 0.22));
+        // 人行天橋
+        t.add(box(0.65, 0.06, 0.16, M.white, 0.75, 0.62, 0.3));
       } },
       { district: '文山', name: '貓空纜車', deg: 152, build(t, root) {
         const hill = new THREE.Mesh(new THREE.ConeGeometry(1.6, 1.6, 7), C('#8cbf6e')); hill.position.set(0.5, 0.8, -0.3); t.add(hill);
@@ -1277,12 +1327,40 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         placeTrees(root, [[-1.5, -0.8], [-1.6, 0.6], [-0.9, 1.5], [1.5, -0.6], [0.4, 1.7], [-0.6, -1.6], [1.0, -1.5], [1.8, 0.4]]);
       } },
       { district: '中正', name: '中正紀念堂', deg: 236, build(t) {
-        [[2.0, 0.18], [1.7, 0.18], [1.4, 0.18]].forEach(([w, h], i) => t.add(box(w, h, w, M.white, 0, i * 0.18, 0)));
-        t.add(box(1.05, 0.9, 1.05, M.white, 0, 0.54, 0));
-        const r1 = cyl(0.05, 1.0, 0.45, 8, blueRoof, 0, 1.44, 0); r1.rotation.y = Math.PI / 8; t.add(r1);
-        t.add(cyl(0.45, 0.5, 0.25, 8, M.white, 0, 1.75, 0));
-        const r2 = cyl(0.02, 0.62, 0.42, 8, blueRoof, 0, 1.98, 0); r2.rotation.y = Math.PI / 8; t.add(r2);
-        t.add(cyl(0.02, 0.06, 0.28, 6, gold, 0, 2.38, 0));
+        // 三層方形台基＋正面大階梯，白色方形堂身略為收分，上覆兩重八角藍色琉璃瓦頂與金色寶頂
+        const marble = C('#f5f3ee'), bronze = C('#3b4a6b');
+        const base = [[1.9, 0.16], [1.6, 0.16], [1.32, 0.16]];
+        base.forEach(([w, h], i) => t.add(box(w, h, w, marble, 0, i * 0.16, -0.25)));
+        for (let i = 0; i < 6; i++) t.add(box(0.5, 0.08 * (i + 1), 0.11, marble, 0, 0, 1.0 - i * 0.11 - 0.25)); // 階梯
+        t.add(box(0.08, 0.5, 0.66, C('#d8d4ca'), -0.29, 0, 0.45 - 0.25)); // 階梯兩側欄板
+        t.add(box(0.08, 0.5, 0.66, C('#d8d4ca'), 0.29, 0, 0.45 - 0.25));
+        t.add(sq(0.55, 0.62, 0.86, marble, 0, 0.48, -0.25)); // 堂身（方形、上窄下寬）
+        // 正面拱門
+        t.add(box(0.3, 0.46, 0.04, bronze, 0, 0.5, 0.2));
+        const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 12, 1, false, 0, Math.PI), bronze);
+        arch.rotation.set(Math.PI / 2, 0, Math.PI / 2); arch.position.set(0, 0.96, 0.2); t.add(arch);
+        t.add(box(0.98, 0.07, 0.98, marble, 0, 1.32, -0.25)); // 簷下橫樑
+        const r1 = cyl(0.42, 1.02, 0.36, 8, blueRoof, 0, 1.39, -0.25); r1.rotation.y = Math.PI / 8; t.add(r1);
+        t.add(cyl(0.4, 0.42, 0.24, 8, marble, 0, 1.73, -0.25));
+        const r2 = cyl(0.03, 0.62, 0.44, 8, blueRoof, 0, 1.95, -0.25); r2.rotation.y = Math.PI / 8; t.add(r2);
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), gold); knob.position.set(0, 2.42, -0.25); t.add(knob);
+        t.add(cyl(0.01, 0.04, 0.22, 6, gold, 0, 2.46, -0.25));
+        // 「大中至正」牌樓（自由廣場）：仿傳統最高等級「五間六柱十一樓」——五個門洞、六根柱、十一座小屋頂
+        const gz = 1.78;
+        t.add(box(1.8, 0.5, 0.16, marble, 0, 0, gz));
+        [-0.72, -0.36, 0, 0.36, 0.72].forEach((x, i) => {
+          const w = i === 2 ? 0.2 : 0.15, h = i === 2 ? 0.34 : i === 1 || i === 3 ? 0.3 : 0.26;
+          t.add(box(w, h, 0.17, bronze, x, 0, gz));
+        });
+        // 十一樓：五個開間上方各一座（中間最高），六根柱頂各一座較小的
+        [-0.72, -0.36, 0, 0.36, 0.72].forEach((x, i) => {
+          const y = i === 2 ? 0.62 : i === 1 || i === 3 ? 0.56 : 0.52;
+          const r = cyl(0.02, i === 2 ? 0.26 : 0.2, 0.14, 4, blueRoof, x, y, gz); r.rotation.y = Math.PI / 4; r.scale.set(1.25, 1, 0.5); t.add(r);
+          t.add(box(i === 2 ? 0.3 : 0.24, y - 0.5, 0.15, marble, x, 0.5, gz));
+        });
+        [-0.9, -0.54, -0.18, 0.18, 0.54, 0.9].forEach((x) => {
+          const r = cyl(0.02, 0.12, 0.1, 4, blueRoof, x, 0.5, gz); r.rotation.y = Math.PI / 4; r.scale.set(1.2, 1, 0.55); t.add(r);
+        });
       } },
       { district: '萬華', name: '龍山寺', deg: 260, build(t) {
         t.add(box(1.8, 0.65, 0.9, red, 0, 0, 0.3));
@@ -1305,11 +1383,24 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         t.add(box(2.6, 0.1, 0.5, C('#8a6a4a'), 0, 0, 1.25)); // 碼頭棧道
       } },
       { district: '士林', name: '臺北表演藝術中心', deg: 306, build(t) {
-        [-0.6, 0.6].forEach((x) => [-0.4, 0.4].forEach((z) => t.add(box(0.12, 0.5, 0.12, M.concrete, x, 0, z))));
-        t.add(box(1.5, 1.2, 1.3, C('#d9dde2'), 0, 0.5, 0));
-        for (let i = 0; i < 4; i++) t.add(box(1.52, 0.03, 1.32, windowMat, 0, 0.75 + i * 0.25, 0));
-        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 10), C('#b9c4cf')); ball.position.set(-0.75, 1.05, 0.55); t.add(ball);
-        t.add(box(1.2, 0.55, 0.7, C('#c9ced6'), 0.95, 0.75, -0.25));
+        // 依 OMA 作品介紹：中央方塊包覆「波浪狀」玻璃帷幕；球劇場像懸在空中、貼在玻璃牆上，
+        // 由一對細柱撐到下方廣場；切入方塊的劇場量體覆 3 毫米鋁合金板（銀灰色）
+        const glassMat = C('#dfe7ec'), alu = C('#aeb5bd'), aluDark = C('#9aa2ab');
+        t.add(box(2.6, 0.08, 2.0, M.pave, 0, 0, 0.1)); // 廣場
+        t.add(box(1.2, 0.42, 0.95, C('#e8e2d6'), 0, 0.08, -0.1)); // 底座
+        t.add(box(1.5, 1.3, 1.3, glassMat, 0, 0.5, -0.1));
+        for (let i = 0; i < 11; i++) { // 波浪玻璃：前面與側面細密的直向紋
+          const ph = i % 2 ? 0.012 : 0;
+          t.add(box(0.03, 1.28, 0.02, C('#c4ced6'), -0.7 + i * 0.14, 0.51, 0.56 + ph));
+          t.add(box(0.02, 1.28, 0.03, C('#c4ced6'), 0.76 + ph, 0.51, -0.68 + i * 0.12));
+        }
+        [0.85, 1.25, 1.6].forEach((y) => t.add(box(1.52, 0.03, 1.32, windowMat, 0, y, -0.1))); // 夜間樓層燈
+        // 球劇場：銀灰鋁板球體，嵌在正面左側，下方一對細柱
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.58, 20, 14), alu); ball.position.set(-0.55, 1.2, 0.62); ball.castShadow = true; t.add(ball);
+        [-0.72, -0.38].forEach((x) => t.add(cyl(0.025, 0.025, 0.8, 6, M.concrete, x, 0.08, 0.95)));
+        // 大劇院：從右側切入的鋁板量體；藍盒子：從後方伸出的長方量體
+        t.add(box(1.0, 0.75, 0.9, aluDark, 1.05, 0.62, -0.25));
+        t.add(box(0.8, 0.5, 0.7, alu, 0.15, 0.95, -1.05));
       } },
       { district: '北投', name: '地熱谷', deg: 332, build(t, root) {
         t.add(cyl(1.25, 1.25, 0.08, 12, teal, 0, 0, 0.2));
@@ -1989,6 +2080,9 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   window.addEventListener('resize', onResize);
 
   if (new URLSearchParams(location.search).has('debug')) {
+    // 除錯：直接把鏡頭放到指定位置（截圖比對地標用）
+    window.__look = (pos, target) => { tween = null; controls.autoRotate = false; camera.position.set(...pos); controls.target.set(...target); controls.update(); };
+    window.__islePos = (id) => islands.get(id)?.pos.toArray();
     window.__dbg = () => {
       const out = {};
       islands.forEach((isle, id) => {
