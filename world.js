@@ -1229,12 +1229,63 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         pos.push(cx, cy, -h, bx, by, -h, ax, ay, -h); // 背面
         pos.push(ax, ay, h, ax, ay, -h, bx, by, -h, ax, ay, h, bx, by, -h, bx, by, h); // 側面
       }
+      return meshFrom(pos, m);
+    };
+    // 自訂網格一律補上 uv，才能跟同材質的方塊、圓柱合併
+    const meshFrom = (pos, m) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((pos.length / 3) * 2), 2));
       g.computeVertexNormals();
       const mesh = new THREE.Mesh(g, m);
       mesh.castShadow = true; mesh.receiveShadow = true;
       return mesh;
+    };
+    // 一組三角形 → 網格；依參考點自動把每個面翻成朝外，免得手算頂點順序
+    const facets = (tris, m, ref) => {
+      const pos = [];
+      for (const [a, b, c] of tris) {
+        const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const out = nx * ((a[0] + b[0] + c[0]) / 3 - ref[0]) + ny * ((a[1] + b[1] + c[1]) / 3 - ref[1]) + nz * ((a[2] + b[2] + c[2]) / 3 - ref[2]);
+        if (out < 0) pos.push(...a, ...c, ...b); else pos.push(...a, ...b, ...c);
+      }
+      return meshFrom(pos, m);
+    };
+    const quad = (tris, a, b, c, d) => { tris.push([a, b, c], [a, c, d]); };
+    // 廡殿頂（四坡、有正脊）：牌樓的小屋頂用
+    const hip = (w, d, h, m, x, y, z) => {
+      const r = Math.max(0, (w - d) / 2), tris = [];
+      const A = [-w / 2, 0, -d / 2], B = [w / 2, 0, -d / 2], Cc = [w / 2, 0, d / 2], D = [-w / 2, 0, d / 2], L = [-r, h, 0], R = [r, h, 0];
+      quad(tris, A, B, R, L); quad(tris, D, Cc, R, L); tris.push([A, D, L], [B, Cc, R]); quad(tris, A, B, Cc, D);
+      const o = facets(tris, m, [0, h * 0.3, 0]); o.position.set(x, y, z); return o;
+    };
+    // 中式凹曲屋面：n 邊形，屋面近脊處陡、近簷處緩，簷角微微起翹，簷口有一圈白色封簷。
+    // 思路參考 lhlGitHub/threejs-architecture-effects（MIT）以剖面函數生成曲面屋頂的做法，程式為本站另寫、尺度簡化
+    const curvedRoof = (n, rEave, rTop, rise, m, trim, { lift = 0.05, rot = Math.PI / n, thick = 0.035 } = {}) => {
+      const top = [], under = [], band = [], NU = 4, NV = 5;
+      const P = (s, u, v, dy = 0) => {
+        const a0 = rot + (s / n) * Math.PI * 2, a1 = rot + ((s + 1) / n) * Math.PI * 2;
+        const r = rEave + (rTop - rEave) * v;
+        const cx = Math.cos(a0) + (Math.cos(a1) - Math.cos(a0)) * u, cz = Math.sin(a0) + (Math.sin(a1) - Math.sin(a0)) * u;
+        const corner = Math.pow(Math.abs(2 * u - 1), 4);
+        return [cx * r, rise * Math.pow(v, 1.7) + lift * Math.pow(1 - v, 2) * corner + dy, cz * r];
+      };
+      for (let s = 0; s < n; s++) {
+        for (let i = 0; i < NU; i++) {
+          const u0 = i / NU, u1 = (i + 1) / NU;
+          for (let j = 0; j < NV; j++) {
+            const v0 = j / NV, v1 = (j + 1) / NV;
+            quad(top, P(s, u0, v0), P(s, u1, v0), P(s, u1, v1), P(s, u0, v1));
+            quad(under, P(s, u0, v0, -thick), P(s, u1, v0, -thick), P(s, u1, v1, -thick), P(s, u0, v1, -thick));
+          }
+          quad(band, P(s, u0, 0), P(s, u1, 0), P(s, u1, 0, -thick), P(s, u0, 0, -thick));
+        }
+        if (rTop > 0.02) top.push([[0, rise, 0], P(s, 0, 1), P(s, 1, 1)]);
+      }
+      const g = new THREE.Group();
+      g.add(facets(top, m, [0, -6, 0]), facets(under, trim, [0, 6, 0]), facets(band, trim, [0, -thick / 2, 0]));
+      return g;
     };
     const placeTrees = (root, pts) => { root.updateMatrixWorld(true); pts.forEach(([x, z]) => treeSpots.push(root.localToWorld(new THREE.Vector3(x, TOP * 0.38, z)))); };
 
@@ -1277,31 +1328,57 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), glow('#ff8a4a', 0.5)); l.position.set(-0.85 + i * 0.26, 1.18, 0.95); t.add(l); }
       } },
       { district: '南港', name: '臺北流行音樂中心', deg: 96, build(t) {
-        // 依建築師 RUR 的描述：表演廳是「蚌殼形、屋頂如摺紙般打褶」，屋頂鋁板帶金色光澤；
-        // 西端是方塊狀的音樂文化館，右側是頂覆穿孔不鏽鋼板的產業區，以人行天橋相連；整區坐在像地形的平台上
-        const shell = C('#c8ccd2'), goldRoof = C('#d2a85a'), steel = C('#b9bec6');
+        // 對照 Wikimedia Commons 實景照：表演廳是多面體「水晶」量體——上半部一叢折板尖峰（香檳灰鋁板），
+        // 腰線以下的折板向內收、顏色較深，底部是玻璃大廳，前方有白色清水混凝土高架平台與坡道。
+        // 道路另一側是高聳的音樂文化館方塊（直向波浪鋁板、坐在斜面基座上），以及橫向分層的流線形產業區。
+        const champ = C('#cfc8b8'), champ2 = C('#bab29f'), bronzeL = C('#9a917f'), bronzeD = C('#857c6b');
+        const silver = C('#d8dbdd'), silver2 = C('#c3c7cb'), cube = C('#b6a688'), fin = C('#cdbfa2'), deck = C('#e6e2d8');
         t.add(box(3.0, 0.14, 2.1, M.pave, 0.1, 0, -0.1)); // 平台
-        t.add(box(1.8, 0.55, 1.25, shell, -0.05, 0.14, -0.35)); // 表演廳主體
-        t.add(box(1.8, 0.3, 0.05, M.glass, -0.05, 0.14, 0.29)); // 大廳玻璃
-        // 打褶屋頂：8 道摺，整體中間高、兩側低（蚌殼輪廓）
-        const N = 8, W = 2.0, x0 = -1.05;
-        for (let i = 0; i < N; i++) {
-          const xa = x0 + (W / N) * i, xb = xa + W / N, xm = (xa + xb) / 2;
-          const arch = (u) => 0.38 * Math.sin(Math.PI * (u - x0) / W);
-          const ya = arch(xa), yb = arch(xb), yr = arch(xm) + (i % 2 ? 0.035 : 0.09);
-          const pleat = prism([[xa, 0], [xb, 0], [xb, yb], [xm, yr], [xa, ya]], 1.4, i % 2 ? goldRoof : C('#e0bd72'));
-          pleat.position.set(0, 0.69, -0.35);
-          t.add(pleat);
+        // —— 表演廳 ——
+        const hx = -0.5, hz = -0.38, N = 10;
+        const ring = (rx, rz, y, off, jit = 0) => Array.from({ length: N }, (_, k) => {
+          const a = ((k + off) / N) * Math.PI * 2;
+          return [hx + Math.cos(a) * rx, y + (k % 2 ? jit : -jit), hz + Math.sin(a) * rz];
+        });
+        const r0 = ring(0.72, 0.46, 0.3, 0.5), r1 = ring(0.98, 0.64, 0.5, 0, 0.035), r2 = ring(0.66, 0.42, 0.78, 0.5, 0.11);
+        const apex = [hx, 0.74, hz];
+        const lo = [[], []], up = [[], []];
+        for (let k = 0; k < N; k++) {
+          const k1 = (k + 1) % N;
+          lo[k % 2].push([r0[k], r1[k1], r1[k]]); // 下半部：向內收的折板
+          lo[(k + 1) % 2].push([r0[k], r0[k1], r1[k1]]);
+          up[k % 2].push([r1[k], r1[k1], r2[k]]); // 上半部：尖峰折板
+          up[(k + 1) % 2].push([r2[k], r1[k1], r2[k1]]);
+          up[k % 2].push([r2[k], r2[k1], apex]);
         }
-        // 音樂文化館（西端方塊，東側有玻璃梯間）
-        t.add(box(0.75, 1.05, 0.75, shell, -1.2, 0.14, 0.55));
-        t.add(box(0.05, 0.95, 0.5, M.glass, -0.81, 0.18, 0.55));
-        // 產業區：低矮量體＋穿孔不鏽鋼屋頂
-        t.add(box(0.9, 0.45, 0.8, shell, 1.15, 0.14, 0.75));
-        const perf = box(1.0, 0.06, 0.9, steel, 1.15, 0.59, 0.75); t.add(perf);
-        for (let i = 0; i < 4; i++) t.add(box(0.9, 0.012, 0.03, M.dark, 1.15, 0.655, 0.42 + i * 0.22));
-        // 人行天橋
-        t.add(box(0.65, 0.06, 0.16, M.white, 0.75, 0.62, 0.3));
+        const ref = [hx, 0.45, hz];
+        t.add(facets(lo[0], bronzeL, ref), facets(lo[1], bronzeD, ref), facets(up[0], champ, ref), facets(up[1], champ2, ref));
+        const lobby = cyl(1, 1, 0.17, N, M.glass, hx, 0.14, hz); lobby.scale.set(0.73, 1, 0.47); t.add(lobby); // 玻璃大廳
+        // 白色高架平台＋坡道
+        t.add(box(1.5, 0.05, 0.36, deck, hx + 0.05, 0.3, 0.42));
+        [-0.6, -0.15, 0.3].forEach((x) => t.add(box(0.07, 0.16, 0.07, deck, hx + 0.05 + x, 0.14, 0.42)));
+        const ramp = box(0.7, 0.04, 0.26, deck, 0, 0, 0); ramp.position.set(0.55, 0.24, 0.48); ramp.rotation.z = -0.24; t.add(ramp);
+        // —— 音樂文化館：斜面基座＋直向波浪鋁板方塊 ——
+        const cx = 0.98, cz = -0.5, half = 0.3, ch = 1.15;
+        t.add(sq(0.62, 0.62, 0.1, M.glass, cx, 0.14, cz));
+        t.add(sq(half * Math.SQRT2 + 0.02, 0.86, 0.3, bronzeL, cx, 0.24, cz));
+        t.add(sq(half * Math.SQRT2, half * Math.SQRT2, ch, cube, cx, 0.54, cz));
+        for (let f = 0; f < 4; f++) {
+          const a = (f * Math.PI) / 2;
+          for (let i = 0; i < 7; i++) {
+            const s = -half + 0.04 + (i * (2 * half - 0.08)) / 6;
+            const px = Math.cos(a) * (half + 0.004) - Math.sin(a) * s, pz = Math.sin(a) * (half + 0.004) + Math.cos(a) * s;
+            t.add(cyl(0.016, 0.016, ch - 0.06, 3, fin, cx + px, 0.57, cz + pz));
+          }
+        }
+        t.add(sq(half * Math.SQRT2 + 0.01, half * Math.SQRT2 + 0.01, 0.03, bronzeD, cx, 0.54 + ch, cz));
+        // —— 產業區：橫向分層的流線形量體 ——
+        const ix = 0.95, iz = 0.62;
+        const bands = [[0.4, 0.4, 0.1, M.glass], [0.44, 0.4, 0.12, silver], [0.38, 0.44, 0.1, silver2], [0.28, 0.38, 0.09, silver], [0.12, 0.28, 0.07, silver2]];
+        let by = 0.14;
+        bands.forEach(([rt, rb, h, m]) => { const b = cyl(rt, rb, h, 10, m, ix, by, iz); b.scale.set(1.3, 1, 0.82); t.add(b); by += h; });
+        // 人行天橋：高架平台接到產業區
+        t.add(box(0.5, 0.04, 0.12, deck, 0.38, 0.33, 0.6));
       } },
       { district: '文山', name: '貓空纜車', deg: 152, build(t, root) {
         const hill = new THREE.Mesh(new THREE.ConeGeometry(1.6, 1.6, 7), C('#8cbf6e')); hill.position.set(0.5, 0.8, -0.3); t.add(hill);
@@ -1327,40 +1404,66 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
         placeTrees(root, [[-1.5, -0.8], [-1.6, 0.6], [-0.9, 1.5], [1.5, -0.6], [0.4, 1.7], [-0.6, -1.6], [1.0, -1.5], [1.8, 0.4]]);
       } },
       { district: '中正', name: '中正紀念堂', deg: 236, build(t) {
-        // 三層方形台基＋正面大階梯，白色方形堂身略為收分，上覆兩重八角藍色琉璃瓦頂與金色寶頂
-        const marble = C('#f5f3ee'), bronze = C('#3b4a6b');
-        const base = [[1.9, 0.16], [1.6, 0.16], [1.32, 0.16]];
-        base.forEach(([w, h], i) => t.add(box(w, h, w, marble, 0, i * 0.16, -0.25)));
-        for (let i = 0; i < 6; i++) t.add(box(0.5, 0.08 * (i + 1), 0.11, marble, 0, 0, 1.0 - i * 0.11 - 0.25)); // 階梯
-        t.add(box(0.08, 0.5, 0.66, C('#d8d4ca'), -0.29, 0, 0.45 - 0.25)); // 階梯兩側欄板
-        t.add(box(0.08, 0.5, 0.66, C('#d8d4ca'), 0.29, 0, 0.45 - 0.25));
-        t.add(sq(0.55, 0.62, 0.86, marble, 0, 0.48, -0.25)); // 堂身（方形、上窄下寬）
-        // 正面拱門
-        t.add(box(0.3, 0.46, 0.04, bronze, 0, 0.5, 0.2));
-        const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 12, 1, false, 0, Math.PI), bronze);
-        arch.rotation.set(Math.PI / 2, 0, Math.PI / 2); arch.position.set(0, 0.96, 0.2); t.add(arch);
-        t.add(box(0.98, 0.07, 0.98, marble, 0, 1.32, -0.25)); // 簷下橫樑
-        const r1 = cyl(0.42, 1.02, 0.36, 8, blueRoof, 0, 1.39, -0.25); r1.rotation.y = Math.PI / 8; t.add(r1);
-        t.add(cyl(0.4, 0.42, 0.24, 8, marble, 0, 1.73, -0.25));
-        const r2 = cyl(0.03, 0.62, 0.44, 8, blueRoof, 0, 1.95, -0.25); r2.rotation.y = Math.PI / 8; t.add(r2);
-        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), gold); knob.position.set(0, 2.42, -0.25); t.add(knob);
-        t.add(cyl(0.01, 0.04, 0.22, 6, gold, 0, 2.46, -0.25));
-        // 「大中至正」牌樓（自由廣場）：仿傳統最高等級「五間六柱十一樓」——五個門洞、六根柱、十一座小屋頂
-        const gz = 1.78;
-        t.add(box(1.8, 0.5, 0.16, marble, 0, 0, gz));
-        [-0.72, -0.36, 0, 0.36, 0.72].forEach((x, i) => {
-          const w = i === 2 ? 0.2 : 0.15, h = i === 2 ? 0.34 : i === 1 || i === 3 ? 0.3 : 0.26;
-          t.add(box(w, h, 0.17, bronze, x, 0, gz));
+        // 對照 Wikimedia Commons 實景照：寬而低的兩層白色台基、正面兩道階梯夾著中央白色坡面；
+        // 方形堂身略寬於高、四壁收分，正面一個大拱門；上覆兩重八角凹曲藍瓦頂（簷口白色），頂端橘銅色寶頂
+        const marble = C('#f5f3ee'), stone = C('#b9b6ae'), indigo = C('#2e3c80'), eaveW = C('#eeeae2'), door = C('#1e2233'), brass = C('#c97a34');
+        const hz = -0.42;
+        t.add(box(2.9, 0.12, 1.55, marble, 0, 0, -0.38)); // 下層台基（左右展開）
+        t.add(box(1.55, 0.14, 1.3, marble, 0, 0.12, hz)); // 上層台基
+        // 欄杆：上層台基三面＋下層台基前緣（避開階梯）
+        const rail = (w, d, x, y, z) => t.add(box(w, 0.05, d, eaveW, x, y, z));
+        rail(1.55, 0.025, 0, 0.26, hz - 0.64); rail(0.025, 1.3, -0.77, 0.26, hz); rail(0.025, 1.3, 0.77, 0.26, hz);
+        rail(0.45, 0.025, -0.55, 0.26, hz + 0.64); rail(0.45, 0.025, 0.55, 0.26, hz + 0.64);
+        rail(1.05, 0.025, -0.9, 0.12, 0.39); rail(1.05, 0.025, 0.9, 0.12, 0.39);
+        // 正面階梯：灰色石階兩道，中間夾一條白色坡面，兩側白色斜欄板
+        const sz = hz + 0.65, steps = 8, run = 0.09, topY = 0.26;
+        for (let i = 0; i < steps; i++) t.add(box(0.62, (topY * (steps - i)) / steps, run, stone, 0, 0, sz + run * (i + 0.5)));
+        const slope = box(0.16, 0.03, Math.hypot(steps * run, topY), marble, 0, 0, 0);
+        slope.position.set(0, topY / 2 + 0.02, sz + (steps * run) / 2); slope.rotation.x = Math.atan2(topY, steps * run); t.add(slope);
+        [-0.33, 0.33].forEach((x) => { const cheek = prism([[0, 0], [steps * run, 0], [0, topY + 0.06]], 0.05, marble); cheek.rotation.y = -Math.PI / 2; cheek.position.set(x, 0, sz); t.add(cheek); });
+        // 堂身：方形、四壁收分（下寬 1.0、上寬 0.9）
+        const bodyY = 0.26, bodyH = 0.62;
+        t.add(sq(0.45 * Math.SQRT2, 0.5 * Math.SQRT2, bodyH, marble, 0, bodyY, hz));
+        // 正面大拱門＋門楣匾額
+        const dz = hz + 0.49;
+        t.add(box(0.3, 0.28, 0.05, door, 0, bodyY, dz));
+        const archG = new THREE.CylinderGeometry(0.15, 0.15, 0.05, 12, 1, false, 0, Math.PI);
+        archG.rotateX(Math.PI / 2); archG.rotateZ(Math.PI / 2); // 半圓盤立起、面向正前方、圓弧朝上
+        const arch = new THREE.Mesh(archG, door); arch.position.set(0, bodyY + 0.28, dz); t.add(arch);
+        t.add(box(0.12, 0.07, 0.03, brass, 0, bodyY + 0.49, hz + 0.47));
+        // 屋頂：白色方形簷樑 → 下重八角凹曲頂 → 白色鼓座（深色斗栱帶）→ 上重八角凹曲頂 → 寶頂
+        t.add(box(0.98, 0.05, 0.98, marble, 0, bodyY + bodyH, hz));
+        const roofY = bodyY + bodyH + 0.05;
+        const r1 = curvedRoof(8, 0.66, 0.38, 0.2, indigo, eaveW, { lift: 0.05 }); r1.position.set(0, roofY, hz); t.add(r1);
+        t.add(cyl(0.4, 0.42, 0.14, 8, eaveW, 0, roofY + 0.16, hz));
+        t.add(cyl(0.41, 0.41, 0.035, 8, C('#3a3f5c'), 0, roofY + 0.24, hz)); // 斗栱帶
+        const r2 = curvedRoof(8, 0.49, 0.03, 0.3, indigo, eaveW, { lift: 0.04 }); r2.position.set(0, roofY + 0.3, hz); t.add(r2);
+        const fy = roofY + 0.59;
+        t.add(cyl(0.05, 0.06, 0.05, 8, brass, 0, fy, hz));
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), brass); knob.position.set(0, fy + 0.11, hz); t.add(knob);
+        t.add(cyl(0.025, 0.045, 0.07, 8, brass, 0, fy + 0.16, hz));
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), brass); tip.position.set(0, fy + 0.25, hz); t.add(tip);
+        // 自由廣場牌樓（實景照）：白色「五間六柱十一樓」，五個圓拱門洞中間最大，
+        // 五座開間大屋頂＋六座柱頂小屋頂，皆為藍瓦廡殿頂、簷下白色
+        const gz = 1.72, gd = 0.16;
+        const pillars = [-0.92, -0.6, -0.24, 0.24, 0.6, 0.92], pillarTop = [0.44, 0.48, 0.54, 0.54, 0.48, 0.44];
+        const bays = [[0.24, 0.2, 0.46], [0.26, 0.23, 0.52], [0.38, 0.26, 0.62], [0.26, 0.23, 0.52], [0.24, 0.2, 0.46]]; // [開口寬, 起拱高, 牆頂]
+        pillars.forEach((x, j) => {
+          t.add(box(0.12, pillarTop[j], gd + 0.02, marble, x, 0, gz));
+          t.add(box(0.2, 0.02, 0.24, eaveW, x, pillarTop[j], gz));
+          t.add(hip(0.22, 0.26, 0.07, indigo, x, pillarTop[j] + 0.02, gz));
         });
-        // 十一樓：五個開間上方各一座（中間最高），六根柱頂各一座較小的
-        [-0.72, -0.36, 0, 0.36, 0.72].forEach((x, i) => {
-          const y = i === 2 ? 0.62 : i === 1 || i === 3 ? 0.56 : 0.52;
-          const r = cyl(0.02, i === 2 ? 0.26 : 0.2, 0.14, 4, blueRoof, x, y, gz); r.rotation.y = Math.PI / 4; r.scale.set(1.25, 1, 0.5); t.add(r);
-          t.add(box(i === 2 ? 0.3 : 0.24, y - 0.5, 0.15, marble, x, 0.5, gz));
+        bays.forEach(([w, ys, yt], i) => {
+          const x = (pillars[i] + pillars[i + 1]) / 2, r = w / 2, strips = 6;
+          for (let k = 0; k < strips; k++) { // 拱圈上方的牆面：切成數條凸四邊形，拼出圓拱開口
+            const xa = -r + (w * k) / strips, xb = xa + w / strips;
+            const ya = ys + Math.sqrt(Math.max(0, r * r - xa * xa)), yb = ys + Math.sqrt(Math.max(0, r * r - xb * xb));
+            const p = prism([[xa, ya], [xb, yb], [xb, yt], [xa, yt]], gd, marble); p.position.set(x, 0, gz); t.add(p);
+          }
+          t.add(box(w + 0.12, 0.025, 0.3, eaveW, x, yt, gz));
+          t.add(hip(w + 0.16, 0.32, i === 2 ? 0.13 : 0.1, indigo, x, yt + 0.025, gz));
         });
-        [-0.9, -0.54, -0.18, 0.18, 0.54, 0.9].forEach((x) => {
-          const r = cyl(0.02, 0.12, 0.1, 4, blueRoof, x, 0.5, gz); r.rotation.y = Math.PI / 4; r.scale.set(1.2, 1, 0.55); t.add(r);
-        });
+        t.add(box(0.2, 0.08, 0.02, C('#efe9dc'), 0, 0.5, gz + gd / 2 + 0.005)); // 中央匾額
       } },
       { district: '萬華', name: '龍山寺', deg: 260, build(t) {
         t.add(box(1.8, 0.65, 0.9, red, 0, 0, 0.3));
