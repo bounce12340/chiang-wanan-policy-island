@@ -2043,24 +2043,24 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     syncLinks(elapsed);
     syncFuture(elapsed);
     // 地震演練：只在繪製時暫時晃動鏡頭，畫完立刻還原，不影響視角控制
-    if (quake.until) {
-      const left = quake.until - performance.now() / 1000;
-      if (left <= 0) { quake.until = 0; crowd.setOverride(null); quake.done?.(); }
-      else {
-        const a = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.35 * Math.min(1, left / 1.5);
-        quake.off.set((Math.random() - 0.5) * a, (Math.random() - 0.5) * a * 0.6, (Math.random() - 0.5) * a);
-        camera.position.add(quake.off);
-      }
+    const left = quake.until ? quake.until - performance.now() / 1000 : 0;
+    const shaking = left > 0;
+    if (shaking) {
+      const a = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.35 * Math.min(1, left / 1.5);
+      quake.off.set((Math.random() - 0.5) * a, (Math.random() - 0.5) * a * 0.6, (Math.random() - 0.5) * a);
+      camera.position.add(quake.off);
     }
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
-    if (quake.until) camera.position.sub(quake.off);
+    if (shaking) camera.position.sub(quake.off);
   }
-  const quake = { until: 0, off: new THREE.Vector3(), done: null };
+  const quake = { until: 0, off: new THREE.Vector3(), timer: 0 };
   function startQuake(seconds = 6, done) {
     quake.until = performance.now() / 1000 + seconds;
-    quake.done = done;
     crowd.setOverride('duck');
+    // 結束時間用計時器控制：就算畫面暫停或很卡，演練也會準時結束
+    clearTimeout(quake.timer);
+    quake.timer = setTimeout(() => { quake.until = 0; crowd.setOverride(null); done?.(); }, seconds * 1000);
   }
   renderer.setAnimationLoop(frame);
   // 分頁切到背景時完全停止

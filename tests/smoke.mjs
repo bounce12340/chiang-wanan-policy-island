@@ -155,7 +155,7 @@ for (const [name, opts] of [
   await page.evaluate(() => document.querySelector('.hotspot-pill').click());
   check(/叫、叫、壓、電/.test(await page.$eval('#pledge-pop', (e) => (e.hidden ? '' : e.textContent))), `safety: 點 AED 提示牌顯示急救口訣`);
   await page.evaluate(() => { document.getElementById('pledge-pop').hidden = true; document.querySelector('[data-quake]').click(); });
-  await page.waitForFunction(() => /演練結束/.test(document.querySelector('.quake-cap')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => /演練結束/.test(document.querySelector('.quake-cap')?.textContent || ''), null, { timeout: 30000 }).catch(() => {});
   check(/演練結束/.test(await page.$eval('.quake-cap', (e) => e.textContent).catch(() => '')) && errors.length === 0, `safety: 地震演練可完整執行${errors.length ? ' ' + errors.join(' | ') : ''}`);
   // 按壓節奏挑戰：以 520 毫秒間隔按壓，應算出約 115 下／分並判定「剛好」
   await page.evaluate(() => { location.hash = '#/cpr'; });
