@@ -1042,3 +1042,19 @@ body.photo-mode .hotspot-pill { display: none !important; }
 body.photo-flash::after { content: ""; position: fixed; inset: 0; background: #fff; z-index: 60; animation: photo-flash .35s ease-out forwards; pointer-events: none; }
 @keyframes photo-flash { from { opacity: .9; } to { opacity: 0; } }
 .sheet-photo img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, .15); margin: 8px 0; }
+
+/* ---------- 島上尋寶 ---------- */
+.hunt-bar {
+  position: fixed; z-index: 19; top: 96px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px);
+  display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px;
+  background: #e2b23c; color: #14213d; border-radius: 14px; box-shadow: var(--shadow); font-size: 13px;
+  animation: sheet-in .3s cubic-bezier(.2, .8, .2, 1);
+}
+.hunt-bar[hidden] { display: none; }
+.hunt-bar .hunt-n { font: 700 18px var(--font-num); }
+.hunt-bar button { border: 1px solid rgba(20, 33, 61, .35); background: rgba(255, 255, 255, .35); color: inherit; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.hunt-bar button:hover { background: rgba(255, 255, 255, .6); }
+body.hunting .timebar, body.hunting .who-bar { display: none; }
+.hunt-done { font-weight: 700; color: var(--st-done); }
+@media (min-width: 1100px) { .hunt-bar { left: calc((100% - 342px) / 2); } }
+@media (max-width: 760px) { .hunt-bar { top: 124px; } }

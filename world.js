@@ -55,7 +55,7 @@ function rng(seed) {
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge, onSelectFuture, onSelectHotspot }) {
+export function createWorld({ container, themes, onSelectTheme, onSelectItem, onHoverItem, onSelectPerson, onSelectPledge, onHoverPledge, onSelectFuture, onSelectHotspot, onSelectTreasure }) {
   const isSmall = window.matchMedia('(max-width: 760px)').matches;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1765,6 +1765,172 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     pledge.meshes.forEach((m) => { m.instanceMatrix.needsUpdate = true; });
   }
 
+  // ---------- 島上尋寶：每座島藏一兩個小道具，點到就算找到 ----------
+  // 位置自動挑：在島面上隨機取點，從上往下打射線，周圍幾點都落在草地高度（沒有建築）才採用
+  const treasure = { list: [], on: false, mats: new Map() };
+  const TM = (hex) => { if (!treasure.mats.has(hex)) treasure.mats.set(hex, new THREE.MeshStandardMaterial({ color: hex, roughness: 0.5, metalness: 0.1, emissive: hex, emissiveIntensity: 0.08 })); return treasure.mats.get(hex); };
+  const tPart = (geo, hex, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, TM(hex)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; return m; };
+  const TREASURE_MODELS = {
+    bike: (g) => { // YouBike：兩個輪子＋車架
+      [-0.16, 0.16].forEach((x) => g.add(tPart(new THREE.TorusGeometry(0.1, 0.022, 6, 14), '#333333', x, 0.12, 0)));
+      g.add(tPart(new THREE.BoxGeometry(0.34, 0.03, 0.03), '#f5b400', 0, 0.2, 0, 0, 0, 0.25));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.16, 0.03), '#f5b400', -0.05, 0.22, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.1, 0.025, 0.06), '#333333', -0.05, 0.31, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.03, 0.16), '#333333', 0.14, 0.32, 0));
+    },
+    plane: (g) => {
+      g.add(tPart(new THREE.CylinderGeometry(0.05, 0.04, 0.42, 8), '#f4f4f4', 0, 0.18, 0, 0, 0, Math.PI / 2));
+      g.add(tPart(new THREE.BoxGeometry(0.1, 0.015, 0.44), '#2f7dd3', 0, 0.18, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.06, 0.12, 0.015), '#2f7dd3', -0.18, 0.25, 0));
+    },
+    chip: (g) => {
+      g.add(tPart(new THREE.BoxGeometry(0.3, 0.05, 0.3), '#1f4d3a', 0, 0.06, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.16, 0.03, 0.16), '#76b900', 0, 0.1, 0));
+      for (let i = 0; i < 4; i++) { const o = -0.105 + i * 0.07; g.add(tPart(new THREE.BoxGeometry(0.025, 0.02, 0.36), '#e2b23c', o, 0.04, 0)); }
+    },
+    key: (g) => {
+      g.add(tPart(new THREE.TorusGeometry(0.08, 0.025, 6, 14), '#e2b23c', -0.14, 0.1, 0, Math.PI / 2));
+      g.add(tPart(new THREE.BoxGeometry(0.26, 0.03, 0.035), '#e2b23c', 0.04, 0.1, 0, 0, 0, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.03, 0.07), '#e2b23c', 0.12, 0.1, 0.04));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.03, 0.05), '#e2b23c', 0.07, 0.1, 0.03));
+    },
+    lunch: (g) => {
+      g.add(tPart(new THREE.BoxGeometry(0.32, 0.1, 0.22), '#d64545', 0, 0.05, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.34, 0.03, 0.24), '#f2c14e', 0, 0.115, 0));
+      [-0.02, 0.02].forEach((z) => g.add(tPart(new THREE.CylinderGeometry(0.008, 0.008, 0.34, 4), '#8a5a2b', 0, 0.14, z, 0, 0, Math.PI / 2)));
+    },
+    milk: (g) => {
+      g.add(tPart(new THREE.CylinderGeometry(0.07, 0.08, 0.24, 10), '#fafafa', 0, 0.12, 0));
+      g.add(tPart(new THREE.CylinderGeometry(0.035, 0.06, 0.06, 10), '#fafafa', 0, 0.27, 0));
+      g.add(tPart(new THREE.CylinderGeometry(0.038, 0.038, 0.035, 10), '#2f7dd3', 0, 0.315, 0));
+    },
+    wheelchair: (g) => {
+      [-0.11, 0.11].forEach((z) => g.add(tPart(new THREE.TorusGeometry(0.11, 0.018, 6, 14), '#555555', 0, 0.12, z)));
+      g.add(tPart(new THREE.BoxGeometry(0.18, 0.03, 0.2), '#2f7dd3', 0.02, 0.17, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.18, 0.2), '#2f7dd3', -0.08, 0.26, 0));
+    },
+    manhole: (g) => {
+      g.add(tPart(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 16), '#4a4f57', 0, 0.015, 0));
+      g.add(tPart(new THREE.TorusGeometry(0.12, 0.012, 4, 16), '#7c838d', 0, 0.035, 0, Math.PI / 2));
+      g.add(tPart(new THREE.BoxGeometry(0.2, 0.012, 0.02), '#7c838d', 0, 0.035, 0));
+    },
+    aed: (g) => {
+      g.add(tPart(new THREE.BoxGeometry(0.26, 0.22, 0.12), '#2e9e5b', 0, 0.11, 0));
+      g.add(tPart(new THREE.BoxGeometry(0.1, 0.03, 0.01), '#ffffff', 0, 0.13, 0.065));
+      g.add(tPart(new THREE.BoxGeometry(0.03, 0.1, 0.01), '#ffffff', 0, 0.13, 0.065));
+      g.add(tPart(new THREE.BoxGeometry(0.1, 0.03, 0.03), '#2e9e5b', 0, 0.235, 0));
+    },
+    bin: (g) => {
+      g.add(tPart(new THREE.CylinderGeometry(0.1, 0.085, 0.26, 10), '#2f7dd3', 0, 0.13, 0));
+      g.add(tPart(new THREE.CylinderGeometry(0.11, 0.11, 0.03, 10), '#1f5aa0', 0, 0.275, 0));
+      g.add(tPart(new THREE.TorusGeometry(0.05, 0.012, 4, 3), '#ffffff', 0, 0.14, 0.095));
+    },
+    ball: (g) => { // 棒球：白球＋兩道紅色縫線
+      g.add(tPart(new THREE.SphereGeometry(0.13, 14, 10), '#f7f5ef', 0, 0.13, 0));
+      g.add(tPart(new THREE.TorusGeometry(0.128, 0.008, 4, 24), '#d64545', 0, 0.13, 0, 0.5, 0.6));
+      g.add(tPart(new THREE.TorusGeometry(0.128, 0.008, 4, 24), '#d64545', 0, 0.13, 0, -0.5, -0.6));
+    },
+    globe: (g) => {
+      g.add(tPart(new THREE.SphereGeometry(0.12, 12, 8), '#2f7dd3', 0, 0.22, 0));
+      g.add(tPart(new THREE.TorusGeometry(0.15, 0.012, 4, 20), '#e2b23c', 0, 0.22, 0, Math.PI / 2.4));
+      g.add(tPart(new THREE.CylinderGeometry(0.06, 0.08, 0.06, 8), '#8a5a2b', 0, 0.03, 0));
+    },
+  };
+  const sparkleGeo = new THREE.OctahedronGeometry(0.06, 0);
+  const sparkleMat = new THREE.MeshBasicMaterial({ color: '#fff3b0', transparent: true, opacity: 0.9, depthWrite: false });
+  const tHitGeo = new THREE.SphereGeometry(0.45, 8, 6);
+  function findSpot(isle, rand) {
+    // 島上所有看得見的網格（含沒合併、會動的模型），不含隱形點擊範圍與其他寶物
+    const meshes = [];
+    isle.root.traverse((o) => { if (o.isMesh && o.material?.visible !== false && !o.userData.treasureId && !treasure.list.some((t) => t.group === o || t.model === o.parent)) meshes.push(o); });
+    const ray = new THREE.Raycaster();
+    const down = new THREE.Vector3(0, -1, 0);
+    const groundAt = (lx, lz) => {
+      const p = isle.root.localToWorld(new THREE.Vector3(lx, 30, lz));
+      ray.set(p, down);
+      const h = ray.intersectObjects(meshes, false)[0];
+      return h ? isle.root.worldToLocal(h.point.clone()).y : -99;
+    };
+    const used = treasure.list.filter((t) => t.themeId === isle.theme.id).map((t) => t.local);
+    for (let k = 0; k < 160; k++) {
+      const a = rand() * Math.PI * 2, r = 1.2 + rand() * 1.9;
+      const lx = Math.cos(a) * r, lz = Math.sin(a) * r;
+      if (isle.beacons.some((b) => Math.hypot(b.position.x - lx, b.position.z - lz) < 0.6)) continue;
+      if (used.some((u) => Math.hypot(u.x - lx, u.z - lz) < 1)) continue;
+      const wpos = isle.root.localToWorld(new THREE.Vector3(lx, TOP, lz));
+      if (treeSpots.some((t) => t.distanceTo(wpos) < 0.55)) continue;
+      const pts = [[0, 0], [0.22, 0], [-0.22, 0], [0, 0.22], [0, -0.22]];
+      if (pts.every(([dx, dz]) => Math.abs(groundAt(lx + dx, lz + dz) - TOP) < 0.04)) return new THREE.Vector3(lx, TOP, lz);
+    }
+    return new THREE.Vector3(2.0, TOP, 2.0);
+  }
+  /** defs: [{ id, themeId, kind }]；found: Set 已找到的 id */
+  function setTreasures(defs, found = new Set()) {
+    treasure.list.forEach((t) => { t.group.parent?.remove(t.group); const i = pickables.indexOf(t.hit); if (i >= 0) pickables.splice(i, 1); });
+    treasure.list = [];
+    scene.updateMatrixWorld(true); // 合併後的網格要先有正確的世界矩陣，往下打的射線才準
+    const rand = rng(2026);
+    defs.forEach((d, k) => {
+      const isle = islands.get(d.themeId);
+      if (!isle || !TREASURE_MODELS[d.kind]) return;
+      const local = findSpot(isle, rand);
+      const group = new THREE.Group();
+      group.position.copy(local);
+      const model = new THREE.Group();
+      TREASURE_MODELS[d.kind](model);
+      model.rotation.y = rand() * Math.PI * 2;
+      model.scale.setScalar(1.6);
+      group.add(model);
+      const spark = new THREE.Mesh(sparkleGeo, sparkleMat);
+      spark.position.y = 0.75;
+      spark.visible = false;
+      group.add(spark);
+      const hit = new THREE.Mesh(tHitGeo, hitMat);
+      hit.position.y = 0.25;
+      hit.userData = { themeId: d.themeId, treasureId: d.id };
+      group.add(hit);
+      pickables.push(hit);
+      isle.root.add(dyn(group));
+      treasure.list.push({ ...d, group, model, spark, hit, local, phase: k * 1.3, found: found.has(d.id) });
+    });
+    syncTreasures();
+  }
+  function syncTreasures() {
+    treasure.list.forEach((t) => { t.spark.visible = treasure.on && !t.found; });
+  }
+  function setTreasureFound(id) { const t = treasure.list.find((x) => x.id === id); if (t) { t.found = true; syncTreasures(); } }
+  function setHuntMode(on) {
+    treasure.on = !!on;
+    // 尋寶時允許把鏡頭拉得更近，才看得清楚小道具
+    controls.minDistance = treasure.on ? 3.5 : 10;
+    syncTreasures();
+  }
+  function updateTreasures(t) {
+    if (!treasure.list.length) return;
+    treasure.list.forEach((x) => {
+      if (treasure.on && !x.found) {
+        // 尋寶時：寶物輕輕跳動，頭上的星星一閃一閃
+        x.model.position.y = Math.max(0, Math.sin(t * 3 + x.phase)) * 0.12;
+        x.spark.rotation.y = t * 2;
+        // 遠看時星星放大一些（最多 3 倍），從整座城市的視角也看得到哪裡有寶物在閃
+        const far = Math.min(3, Math.max(1, camera.position.distanceTo(x.group.getWorldPosition(tmpV)) / 10));
+        x.spark.scale.setScalar((0.6 + 0.6 * Math.max(0, Math.sin(t * 2.4 + x.phase))) * far);
+      } else x.model.position.y = 0;
+    });
+  }
+  // 提示：鏡頭飛到某個寶物附近（不打開島的面板）
+  function hintTreasure(id) {
+    const t = treasure.list.find((x) => x.id === id);
+    if (!t) return;
+    const isle = islands.get(t.themeId);
+    focused = null;
+    setInset();
+    const w = isle.root.localToWorld(t.local.clone());
+    const small = window.matchMedia('(max-width: 760px)').matches;
+    const out = new THREE.Vector3(isle.pos.x * 0.05, 0, 1).normalize();
+    flyTo(isle.pos.clone().add(out.multiplyScalar(small ? 10 : 7.5)).setY(w.y + (small ? 6.5 : 5)), isle.pos.clone().setY(w.y));
+  }
+
   // ---------- 互動 ----------
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -1776,8 +1942,17 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(pickables, false)[0];
+    const hits = raycaster.intersectObjects(pickables, false);
+    const hit = hits[0];
     if (!hit) return null;
+    // 寶物優先：只要沒被看得見的東西（建築、島體）擋住就算點到；隱形的點擊範圍（光柱、承諾牌）不擋。
+    // 同一條視線上有兩個寶物時，選離視線最近的那個
+    const wall = hits.find((h) => h.object.material.visible !== false && !h.object.userData.treasureId);
+    const tv = new THREE.Vector3();
+    const tHits = hits.filter((h) => h.object.userData.treasureId && (!wall || h.distance <= wall.distance + 0.3))
+      .map((h) => ({ h, d: raycaster.ray.distanceSqToPoint(h.object.getWorldPosition(tv)) }))
+      .sort((a, b) => a.d - b.d);
+    if (tHits.length) { const best = tHits[0].h.object.userData; return { themeId: best.themeId, treasureId: best.treasureId }; }
     const d = hit.object.userData;
     if (d.pledgeId) return { themeId: d.themeId, pledgeId: d.pledgeId };
     if (d.futureId) return { themeId: d.themeId, futureId: d.futureId };
@@ -1814,7 +1989,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   el.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
     const h = pick(e.clientX, e.clientY);
-    if (!h?.itemId && !h?.pledgeId && !h?.futureId && personAt(e.clientX, e.clientY, false)) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
+    if (!h?.itemId && !h?.pledgeId && !h?.futureId && !h?.treasureId && personAt(e.clientX, e.clientY, false)) { setHover(null); renderer.domElement.style.cursor = 'pointer'; return; }
     setHover(h, e.clientX, e.clientY);
   });
   el.addEventListener('pointerleave', () => setHover(null));
@@ -1825,6 +2000,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     if (moved > 7) return;
     // 直接點中光柱或承諾牌時優先；否則才看附近有沒有居民
     const h = pick(e.clientX, e.clientY);
+    if (h?.treasureId) { onSelectTreasure?.(h.treasureId); return; }
     if (!h?.itemId && !h?.pledgeId && !h?.futureId) {
       const person = personAt(e.clientX, e.clientY, e.pointerType === 'touch');
       if (person && onSelectPerson) { onSelectPerson(person.meta, person); return; }
@@ -2140,6 +2316,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     applyInset(rawDt);
     scene.updateMatrixWorld();
     crowd.update(elapsed);
+    updateTreasures(elapsed);
     updateBubble();
     syncBeacons();
     syncPledges(elapsed);
@@ -2186,6 +2363,15 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     // 除錯：直接把鏡頭放到指定位置（截圖比對地標用）
     window.__look = (pos, target) => { tween = null; controls.autoRotate = false; camera.position.set(...pos); controls.target.set(...target); controls.update(); };
     window.__islePos = (id) => islands.get(id)?.pos.toArray();
+    // 尋寶測試：寶物的世界座標與目前的螢幕座標
+    window.__treasure = (id) => {
+      const t = treasure.list.find((x) => x.id === id);
+      if (!t) return null;
+      const w = t.group.localToWorld(new THREE.Vector3(0, 0.2, 0));
+      const p = w.clone().project(camera);
+      const r = renderer.domElement.getBoundingClientRect();
+      return { world: w.toArray(), x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
+    };
     window.__dbg = () => {
       const out = {};
       islands.forEach((isle, id) => {
@@ -2222,6 +2408,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
     setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
     quake: startQuake,
+    setTreasures, setTreasureFound, setHuntMode, hintTreasure,
     // 拍照模式：立刻畫一格並回傳畫布；呼叫端必須在同一個工作階段內讀取像素（未開 preserveDrawingBuffer）
     snapshot: () => { scene.updateMatrixWorld(); renderer.render(scene, camera); return renderer.domElement; },
   };

@@ -188,6 +188,32 @@ for (const [name, opts] of [
   await ctx.close();
 }
 
+// 島上尋寶：寶物要放在島面上（不在建築裡），點到會解鎖施政並計數
+{
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/?debug#/hunt`, { waitUntil: 'load' });
+  await page.waitForSelector('#hunt-bar:not([hidden])', { timeout: 30000 });
+  await page.addStyleTag({ content: '.footnote,.layer,.index,.legend,.toast,.isle-label,.district-label,.center-label,.hotspot-pill{display:none!important}' });
+  let found = 0;
+  for (const id of ['bike', 'globe', 'aed']) {
+    const t = await page.evaluate((id) => window.__treasure(id), id);
+    const [x, y, z] = t.world;
+    await page.evaluate(([x, y, z]) => window.__look([x + 0.01, y + 7, z + 0.01], [x, y, z]), [x, y, z]);
+    await page.waitForTimeout(500);
+    const s = await page.evaluate((id) => window.__treasure(id), id);
+    await page.mouse.click(s.x, s.y);
+    await page.waitForTimeout(200);
+    if (/找到了/.test(await page.$eval('#pledge-pop', (e) => (e.hidden ? '' : e.textContent)))) found++;
+    await page.evaluate(() => { document.getElementById('pledge-pop').hidden = true; });
+  }
+  const bar = await page.$eval('#hunt-bar', (e) => e.textContent);
+  check(found === 3 && /3 \/ 12/.test(bar) && errors.length === 0, `hunt: 點寶物可解鎖施政並計數（${found}/3）${errors.length ? ' ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 // 上次造訪後的新內容：模擬上一次造訪只看過一項，應提示新增
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });

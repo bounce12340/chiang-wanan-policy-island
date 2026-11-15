@@ -54,6 +54,7 @@ export function initGames(ctx) {
     { id: 'game:daily', label: '每日一題', kind: '遊戲', n: '日' },
     { id: 'game:numbers', label: '數字猜猜看', kind: '遊戲', n: '數' },
     { id: 'game:photo', label: '施政島明信片', kind: '遊戲', n: '拍' },
+    { id: 'game:hunt', label: '島上尋寶', kind: '遊戲', n: '寶' },
   ];
   const islandIds = STAMPS.filter((s) => s.kind === '島').map((s) => s.id);
   const got = () => read('passport', {});
@@ -99,7 +100,7 @@ export function initGames(ctx) {
         const [k, v] = st.split(':');
         if (k === 'isle') { ctx.setView('island'); ctx.openTheme(v); }
         else if (k === 'view') ctx.setView(v);
-        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto })[v]();
+        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto, hunt: ctx.openHunt })[v]();
         return;
       }
       if (e.target.closest('[data-pp="share"]')) {
@@ -129,6 +130,7 @@ export function initGames(ctx) {
         ${card('sort', '↕️', '排排看', '把 5 件施政大事依發生先後排好')}
         ${card('mayor', '🏛️', '這是哪位市長做的？', '1994 年以來五任市長，每人各 2 題')}
         ${card('cpr', '❤️', '按壓節奏挑戰', '跟著節奏按 10 秒，記住 CPR 每分鐘 100–120 下')}
+        ${card('hunt', '🔍', '島上尋寶', `每座島都藏了小道具，共 12 個，點到就解鎖一項施政`, `<em class="gm-tag">${ctx.huntCount?.() ?? 0}/12</em>`)}
         ${card('photo', '📷', '施政島明信片', '轉到喜歡的角度按快門，做一張可以分享的明信片')}
         ${card('passport', '🛂', '施政島護照', '逛島、看專題、玩遊戲就蓋章', `<em class="gm-tag">${n}/${STAMPS.length}</em>`)}
       </div>`;
@@ -137,6 +139,7 @@ export function initGames(ctx) {
       if (!k) return;
       if (k === 'quiz') { dlg.close(); ctx.openQuiz(); return; }
       if (k === 'photo') { dlg.close(); ctx.openPhoto(); return; }
+      if (k === 'hunt') { dlg.close(); ctx.openHunt(); return; }
       ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr, numbers: openNumbers })[k]();
     };
   }
