@@ -597,6 +597,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
   // ---------- islands ----------
 
   const islands = new Map();
+  const landmarkSpots = []; // 外圈 12 區地標小島的位置（開船巡島用）
   const tmpV = new THREE.Vector3();
   const beaconList = [];
   const hitGeo = new THREE.SphereGeometry(0.55, 8, 6);
@@ -1527,6 +1528,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       const x = Math.sin(a) * RX, zc = -Math.cos(a);
       const z = zc * (zc < 0 ? RZ_N : RZ_S);
       const isle = islet(x, z, 2.4, 60 + i);
+      landmarkSpots.push({ x, z, district: L.district, name: L.name });
       isle.root.rotation.y = 0; // 地標一律正面朝鏡頭（+z）
       L.build(isle.top, isle.root);
       mergeStatic(isle.root);
@@ -1931,6 +1933,118 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     flyTo(isle.pos.clone().add(out.multiplyScalar(small ? 10 : 7.5)).setY(w.y + (small ? 6.5 : 5)), isle.pos.clone().setY(w.y));
   }
 
+  // ---------- 開船巡島：第三人稱小船，在群島之間航行，靠近島嶼時通知外部顯示施政卡 ----------
+  const sail = { on: false, boat: null, pos: new THREE.Vector3(), heading: 0, speed: 0, f: 0, t: 0, near: null, onNear: null, wake: null, wakeI: 0, wakeT: 0, wakeAge: [] };
+  const SAIL_MAX = 6.5, SAIL_R = 34, ISLE_R = 4.5, LM_R = 3.1;
+  function buildBoat() {
+    const g = new THREE.Group();
+    const hullM = T('#f4f1ea'), pink = T('#d0457a');
+    g.add(box(0.56, 0.3, 0.8, hullM, 0, 0, 0.12)); // 船身
+    const bow = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.55, 4), hullM); // 船頭：四角錐朝 -z
+    bow.rotation.set(-Math.PI / 2, Math.PI / 4, 0); bow.scale.set(1, 1, 0.75); bow.position.set(0, 0.15, -0.55); g.add(bow);
+    g.add(box(0.58, 0.05, 0.82, T('#2f7dd3'), 0, 0.06, 0.12)); // 水線藍帶
+    g.add(box(0.5, 0.04, 0.76, T('#c9a26b'), 0, 0.3, 0.12)); // 甲板
+    g.add(box(0.4, 0.28, 0.36, T('#ffffff'), 0, 0.34, 0.3)); // 船艙
+    g.add(box(0.44, 0.04, 0.4, pink, 0, 0.62, 0.3));
+    g.add(box(0.34, 0.12, 0.02, M.glass, 0, 0.46, 0.115));
+    g.add(cyl(0.015, 0.015, 0.7, 4, M.concrete, 0, 0.62, 0.42));
+    g.add(box(0.02, 0.16, 0.24, pink, 0, 1.16, 0.54)); // 小旗
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+    g.scale.setScalar(1.5);
+    // 船尾浪花：一串小圓片，依序生成、慢慢縮小消失
+    const wake = new THREE.InstancedMesh(new THREE.CircleGeometry(0.35, 10), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, depthWrite: false }), 28);
+    wake.frustumCulled = false;
+    const d = new THREE.Object3D();
+    d.scale.setScalar(0);
+    d.updateMatrix();
+    for (let i = 0; i < 28; i++) { wake.setMatrixAt(i, d.matrix); sail.wakeAge[i] = 99; }
+    scene.add(wake);
+    sail.wake = wake;
+    scene.add(g);
+    return g;
+  }
+  const wakeDummy = new THREE.Object3D();
+  function startSail(onNear) {
+    if (!sail.boat) sail.boat = buildBoat();
+    sail.onNear = onNear;
+    sail.on = true;
+    sail.boat.visible = true;
+    sail.pos.set(0, 0, 30);
+    sail.heading = 0;
+    sail.speed = 0;
+    sail.near = null;
+    focused = null;
+    tween = null;
+    controls.enabled = false;
+    controls.autoRotate = false;
+    setInset();
+    camera.position.set(0, 4.5, 38);
+  }
+  function stopSail() {
+    if (!sail.on) return;
+    sail.on = false;
+    sail.f = sail.t = 0;
+    if (sail.boat) sail.boat.visible = false;
+    controls.enabled = true;
+    sail.near = null;
+  }
+  function setSailInput(f, t) { sail.f = Math.max(-1, Math.min(1, f)); sail.t = Math.max(-1, Math.min(1, t)); }
+  function updateSail(dt) {
+    if (!sail.on) return;
+    const target = sail.f * SAIL_MAX * (sail.f < 0 ? 0.45 : 1);
+    sail.speed += (target - sail.speed) * Math.min(1, dt * 1.6);
+    const turnK = 0.35 + 0.65 * Math.min(1, Math.abs(sail.speed) / 2);
+    sail.heading += sail.t * 1.9 * turnK * dt * (sail.speed < -0.1 ? -1 : 1);
+    const fx = -Math.sin(sail.heading), fz = -Math.cos(sail.heading);
+    sail.pos.x += fx * sail.speed * dt;
+    sail.pos.z += fz * sail.speed * dt;
+    // 碰撞：島嶼視為圓形，撞到就沿邊滑開；外圍是陸地，限制在海面範圍
+    const push = (cx, cz, r) => {
+      const dx = sail.pos.x - cx, dz = sail.pos.z - cz, d = Math.hypot(dx, dz);
+      if (d < r && d > 1e-4) { sail.pos.x = cx + (dx / d) * r; sail.pos.z = cz + (dz / d) * r; sail.speed *= 0.92; }
+    };
+    push(0, 0, ISLE_R);
+    islands.forEach((isle) => push(isle.pos.x, isle.pos.z, ISLE_R));
+    landmarkSpots.forEach((l) => push(l.x, l.z, LM_R));
+    const rr = Math.hypot(sail.pos.x, sail.pos.z);
+    if (rr > SAIL_R) { sail.pos.x *= SAIL_R / rr; sail.pos.z *= SAIL_R / rr; sail.speed *= 0.9; }
+    const b = sail.boat;
+    b.position.set(sail.pos.x, 0.02 + Math.sin(elapsed * 2.2) * 0.04, sail.pos.z);
+    b.rotation.set(Math.sin(elapsed * 1.7) * 0.03 + sail.speed * 0.006, sail.heading, -sail.t * Math.min(1, Math.abs(sail.speed) / 3) * 0.12);
+    // 浪花
+    sail.wakeT += dt;
+    if (Math.abs(sail.speed) > 0.6 && sail.wakeT > 0.07) {
+      sail.wakeT = 0;
+      sail.wakeI = (sail.wakeI + 1) % 28;
+      sail.wakeAge[sail.wakeI] = 0;
+      sail.wake.userData[sail.wakeI] = [sail.pos.x - fx * 1.0, sail.pos.z - fz * 1.0];
+    }
+    for (let i = 0; i < 28; i++) {
+      const age = (sail.wakeAge[i] += dt);
+      const p = sail.wake.userData[i];
+      const k = age < 1.6 && p ? 1 - age / 1.6 : 0;
+      wakeDummy.position.set(p ? p[0] : 0, 0.06, p ? p[1] : 0);
+      wakeDummy.rotation.set(-Math.PI / 2, 0, 0);
+      wakeDummy.scale.setScalar(k * (0.6 + age * 1.2));
+      wakeDummy.updateMatrix();
+      sail.wake.setMatrixAt(i, wakeDummy.matrix);
+    }
+    sail.wake.instanceMatrix.needsUpdate = true;
+    // 追尾鏡頭：在船後上方，平滑跟隨
+    const small = window.matchMedia('(max-width: 760px)').matches;
+    const back = small ? 13 : 10.5, up = small ? 7 : 5.2;
+    const want = tmpV.set(sail.pos.x - fx * back, up, sail.pos.z - fz * back);
+    camera.position.lerp(want, 1 - Math.exp(-dt * 3));
+    controls.target.set(sail.pos.x + fx * 5, 0.6, sail.pos.z + fz * 5);
+    camera.lookAt(controls.target);
+    // 靠近哪座島
+    let near = null, best = Infinity;
+    islands.forEach((isle, id) => { const d = Math.hypot(sail.pos.x - isle.pos.x, sail.pos.z - isle.pos.z); if (d < ISLE_R + 3.2 && d < best) { best = d; near = { type: 'theme', id }; } });
+    landmarkSpots.forEach((l) => { const d = Math.hypot(sail.pos.x - l.x, sail.pos.z - l.z); if (d < LM_R + 2.6 && d < best) { best = d; near = { type: 'landmark', id: l.district, district: l.district, name: l.name }; } });
+    if (!near && Math.hypot(sail.pos.x, sail.pos.z) < ISLE_R + 3.2) near = { type: 'center', id: 'center' };
+    if ((near?.id || null) !== (sail.near?.id || null)) { sail.near = near; sail.onNear?.(near); }
+  }
+
   // ---------- 互動 ----------
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
@@ -2245,7 +2359,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     // 清單／時間軸蓋住整個畫面時完全不繪製
     if (paused) { clock.getDelta(); return; }
     const t = performance.now();
-    const busy = tween || t - lastInput < 1500 || todT < 1;
+    const busy = tween || sail.on || t - lastInput < 1500 || todT < 1;
     if (isSmall && !busy) {
       skipAcc += clock.getDelta();
       if (skipAcc < 1 / 30) return;
@@ -2312,7 +2426,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
       if (raw >= 1) tween = null;
     }
     updateStage(dt);
-    controls.update();
+    if (sail.on) updateSail(Math.min(rawDt, 0.1));
+    else controls.update();
     applyInset(rawDt);
     scene.updateMatrixWorld();
     crowd.update(elapsed);
@@ -2363,6 +2478,8 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     // 除錯：直接把鏡頭放到指定位置（截圖比對地標用）
     window.__look = (pos, target) => { tween = null; controls.autoRotate = false; camera.position.set(...pos); controls.target.set(...target); controls.update(); };
     window.__islePos = (id) => islands.get(id)?.pos.toArray();
+    window.__sailTo = (x, z, h = 0) => { sail.pos.set(x, 0, z); sail.heading = h; };
+    window.__sail = () => ({ pos: sail.pos.toArray().map((v) => +v.toFixed(2)), near: sail.near, speed: +sail.speed.toFixed(2), isles: [...islands.values()].map((i) => [i.theme.id, +i.pos.x.toFixed(1), +i.pos.z.toFixed(1)]) });
     // 尋寶測試：寶物的世界座標與目前的螢幕座標
     window.__treasure = (id) => {
       const t = treasure.list.find((x) => x.id === id);
@@ -2409,6 +2526,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
     quake: startQuake,
     setTreasures, setTreasureFound, setHuntMode, hintTreasure,
+    startSail, stopSail, setSailInput, sailing: () => sail.on, resetCamera: () => { focused = null; setInset(); flyTo(HOME.pos, HOME.target, 1.4); },
     // 拍照模式：立刻畫一格並回傳畫布；呼叫端必須在同一個工作階段內讀取像素（未開 preserveDrawingBuffer）
     snapshot: () => { scene.updateMatrixWorld(); renderer.render(scene, camera); return renderer.domElement; },
   };

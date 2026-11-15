@@ -14,6 +14,7 @@ import { initExtras } from './extras.js';
 import { initGames } from './games.js';
 import { initPhoto } from './photo.js';
 import { initHunt } from './hunt.js';
+import { initSail } from './sail.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -402,6 +403,7 @@ async function boot() {
   let extras = null;
   let games = null;
   let hunt = null;
+  let sail = null;
   const pledgesRoot = $('#pledges-inner');
   function itemTitle(themeId, itemId) {
     const t = byId.get(themeId);
@@ -930,6 +932,8 @@ async function boot() {
     openQuiz: () => extras.openQuiz(),
     openPhoto: () => photo?.enter(),
     openHunt: () => hunt?.start(),
+    openSail: () => sail?.start(),
+    sailCount: () => sail?.visitedCount() ?? 0,
     huntCount: () => hunt?.count() ?? 0,
     pause: (p) => world?.setPaused(p || view !== 'island'),
     openPledge: (id) => { setView('pledges'); ensurePledges().then(() => focusPledge(pledgesRoot, id)); history.replaceState(null, '', `#/pledges/${id}`); },
@@ -939,6 +943,10 @@ async function boot() {
     world, esc, toast, byId, pop, setView, hideHero, closeTheme: closePanel,
     stamp: (k) => games.stamp(k),
     showPop: (html) => { tip.hidden = true; pop.innerHTML = `<button class="pop-close" aria-label="關閉">×</button>${html}`; pop.hidden = false; },
+  });
+  sail = initSail({
+    world, esc, toast, byId, themes, setView, hideHero, closeTheme: closePanel, openTheme,
+    stamp: (k) => games.stamp(k),
   });
   const photo = initPhoto({
     world, toast, setView, view: () => view, stamp: (k) => games.stamp(k),
@@ -961,6 +969,7 @@ async function boot() {
     if (id === 'photo') { hideHero(); photo.enter(); return; }
     if (id === 'hunt') { hunt.start(); return; }
     if (id === 'budget') { games.openBudget(); return; }
+    if (id === 'sail') { sail.start(); return; }
     if (id === 'who') { extras.setWho(itemId); return; }
     if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
     if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }

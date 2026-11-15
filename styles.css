@@ -1080,3 +1080,30 @@ body.hunting .timebar, body.hunting .who-bar { display: none; }
 .bg-bars .city, .bg-legend .city { background: var(--st-in_progress); }
 .bg-legend { font-size: 12px; color: var(--ink-soft); }
 .bg-legend i { display: inline-block; width: 12px; height: 8px; border-radius: 3px; margin: 0 4px 0 8px; vertical-align: middle; }
+
+/* ---------- 開船巡島 ---------- */
+body.sailing .index, body.sailing .legend, body.sailing .layer, body.sailing .timebar, body.sailing .panel, body.sailing .who-bar,
+body.sailing .hunt-bar, body.sailing .footnote, body.sailing .hero, body.sailing .pledge-pop, body.sailing .hotspot-pill { display: none !important; }
+.sail-ui[hidden] { display: none; }
+.sl-top { position: fixed; z-index: 30; top: 96px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px;
+  background: var(--ink); color: var(--paper); border-radius: 14px; box-shadow: var(--shadow); font-size: 13px; white-space: nowrap; }
+.sl-top .sl-n { opacity: .85; }
+.sl-top button { border: 1px solid rgba(255,255,255,.3); background: none; color: inherit; border-radius: 8px; padding: 4px 10px; font-weight: 700; cursor: pointer; }
+.sl-card { position: fixed; z-index: 30; left: 50%; bottom: calc(24px + var(--safe-b)); transform: translateX(-50%); width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--paper) 94%, transparent); box-shadow: var(--shadow); animation: sheet-in .25s ease; }
+.sl-card[hidden] { display: none; }
+.sl-card p { margin: 0 0 4px; font-size: 15px; }
+.sl-card p i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.sl-card small { display: block; color: var(--ink-soft); font-size: 12.5px; line-height: 1.5; }
+.sl-card span { display: block; margin: 6px 0; font-size: 13px; }
+.sl-card .cta { width: 100%; }
+.sl-pad { position: fixed; z-index: 31; left: 22px; bottom: calc(24px + var(--safe-b)); width: 120px; height: 120px; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 25%, transparent); border: 2px solid rgba(255,255,255,.6); touch-action: none; display: none; }
+.sl-pad i { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: var(--paper); box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+.sl-help { position: fixed; z-index: 30; left: 16px; bottom: 14px; margin: 0; font-size: 12px; color: var(--ink); background: color-mix(in srgb, var(--paper) 85%, transparent); padding: 6px 10px; border-radius: 10px; }
+@media (pointer: coarse), (max-width: 760px) {
+  .sl-pad { display: block; }
+  .sl-help { display: none; }
+  .sl-card { left: auto; right: 12px; transform: none; width: calc(100vw - 170px); bottom: calc(24px + var(--safe-b)); }
+  .sl-top { top: 124px; font-size: 12px; }
+}

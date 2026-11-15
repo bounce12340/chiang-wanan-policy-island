@@ -56,6 +56,7 @@ export function initGames(ctx) {
     { id: 'game:photo', label: '施政島明信片', kind: '遊戲', n: '拍' },
     { id: 'game:hunt', label: '島上尋寶', kind: '遊戲', n: '寶' },
     { id: 'game:budget', label: '如果我是市長', kind: '遊戲', n: '帥' },
+    { id: 'game:sail', label: '環島航行', kind: '遊戲', n: '船' },
   ];
   const islandIds = STAMPS.filter((s) => s.kind === '島').map((s) => s.id);
   const got = () => read('passport', {});
@@ -101,7 +102,7 @@ export function initGames(ctx) {
         const [k, v] = st.split(':');
         if (k === 'isle') { ctx.setView('island'); ctx.openTheme(v); }
         else if (k === 'view') ctx.setView(v);
-        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto, hunt: ctx.openHunt, budget: openBudget })[v]();
+        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto, hunt: ctx.openHunt, budget: openBudget, sail: ctx.openSail })[v]();
         return;
       }
       if (e.target.closest('[data-pp="share"]')) {
@@ -132,6 +133,7 @@ export function initGames(ctx) {
         ${card('mayor', '🏛️', '這是哪位市長做的？', '1994 年以來五任市長，每人各 2 題')}
         ${card('cpr', '❤️', '按壓節奏挑戰', '跟著節奏按 10 秒，記住 CPR 每分鐘 100–120 下')}
         ${card('budget', '🏛️', '如果我是市長', '100 億元（虛擬）分給 12 種市民，看看你的施政風格')}
+        ${card('sail', '⛵', '開船巡島', '開小船在群島之間航行，靠近哪座島就看哪座島的施政', `<em class="gm-tag">${ctx.sailCount?.() ?? 0}/10</em>`)}
         ${card('hunt', '🔍', '島上尋寶', `每座島都藏了小道具，共 12 個，點到就解鎖一項施政`, `<em class="gm-tag">${ctx.huntCount?.() ?? 0}/12</em>`)}
         ${card('photo', '📷', '施政島明信片', '轉到喜歡的角度按快門，做一張可以分享的明信片')}
         ${card('passport', '🛂', '施政島護照', '逛島、看專題、玩遊戲就蓋章', `<em class="gm-tag">${n}/${STAMPS.length}</em>`)}
@@ -142,6 +144,7 @@ export function initGames(ctx) {
       if (k === 'quiz') { dlg.close(); ctx.openQuiz(); return; }
       if (k === 'photo') { dlg.close(); ctx.openPhoto(); return; }
       if (k === 'hunt') { dlg.close(); ctx.openHunt(); return; }
+      if (k === 'sail') { dlg.close(); ctx.openSail(); return; }
       ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr, numbers: openNumbers, budget: openBudget })[k]();
     };
   }

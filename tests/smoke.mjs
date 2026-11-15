@@ -221,6 +221,26 @@ for (const [name, opts] of [
   await ctx.close();
 }
 
+// 開船巡島：靠近交通島時跳出施政卡，按 E 上岸打開該島
+{
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`${BASE}/?debug#/sail`, { waitUntil: 'load' });
+  await page.waitForFunction(() => !document.querySelector('#sail-ui').hidden, null, { timeout: 30000 });
+  await page.evaluate(() => window.__sailTo(3.7, 13.5));
+  await page.keyboard.down('w');
+  await page.waitForFunction(() => /交通/.test(document.querySelector('.sl-card:not([hidden])')?.textContent || ''), null, { timeout: 15000 }).catch(() => {});
+  await page.keyboard.up('w');
+  const card = await page.$eval('.sl-card', (e) => (e.hidden ? '' : e.textContent));
+  await page.keyboard.press('e');
+  await page.waitForTimeout(800);
+  const docked = await page.evaluate(() => document.querySelector('#sail-ui').hidden && location.hash.startsWith('#/transport'));
+  check(/交通/.test(card) && docked && errors.length === 0, `sail: 開船靠近島嶼顯示施政卡、可上岸${errors.length ? ' ' + errors.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 // 上次造訪後的新內容：模擬上一次造訪只看過一項，應提示新增
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 } });

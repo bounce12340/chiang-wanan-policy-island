@@ -25,10 +25,10 @@
   <link rel="stylesheet" href="./editorial.css">
   <script type="importmap">
     { "imports": {
-        "three": "./vendor/three-lite.js?v=b319609203",
-        "three/addons/controls/OrbitControls.js": "./vendor/three-lite.js?v=b319609203",
-        "three/addons/renderers/CSS2DRenderer.js": "./vendor/three-lite.js?v=b319609203",
-        "three/addons/utils/BufferGeometryUtils.js": "./vendor/three-lite.js?v=b319609203"
+        "three": "./vendor/three-lite.js?v=ced747def2",
+        "three/addons/controls/OrbitControls.js": "./vendor/three-lite.js?v=ced747def2",
+        "three/addons/renderers/CSS2DRenderer.js": "./vendor/three-lite.js?v=ced747def2",
+        "three/addons/utils/BufferGeometryUtils.js": "./vendor/three-lite.js?v=ced747def2"
     } }
   </script>
 </head>
@@ -126,6 +126,7 @@
   </aside>
   <div class="who-bar" id="who-bar" role="status" hidden></div>
   <div class="hunt-bar" id="hunt-bar" role="status" aria-live="polite" hidden></div>
+  <div class="sail-ui" id="sail-ui" role="region" aria-label="開船巡島" hidden></div>
   <div class="pledge-pop" id="pledge-pop" role="dialog" aria-label="政見查證摘要" hidden></div>
 
   <aside class="legend" id="legend" aria-label="狀態篩選">
@@ -264,6 +265,7 @@
       <li>「政見猜猜看」從已兌現、部分兌現、未兌現三種狀態各抽幾題，比例不代表整體結果；答案與說明都來自政見兌現頁的查證資料。</li>
       <li>小遊戲（排排看、這是哪位市長做的、每日一題、數字猜猜看）的題目都取自本站已查證的資料，不出自編的假敘述；「哪位市長」五任各出同樣題數，題目中的姓名以 ○○○ 代替；數字猜猜看的答案都對應某一項施政的原句，揭曉時一併顯示。</li>
       <li>「如果我是市長」把 100 億元（虛擬）分給 12 種市民後，對照的是民生帳本裡市府任內新設或調高的措施「件數」占比，不是預算金額。</li>
+      <li>開船巡島：電腦用 WASD 或方向鍵、手機用搖桿開小船，靠近政策島會跳出施政卡，可以直接上岸。</li>
       <li>島上尋寶（小遊戲）：每座島藏了跟該島施政有關的小道具，共 12 個；點到就解鎖那項施政，進度只存在你的瀏覽器裡。</li>
       <li>拍照模式（右上相機圖示）會把目前的 3D 畫面合成明信片，圖片只在你的瀏覽器裡產生，不會上傳。</li>
       <li>收藏清單、遊戲紀錄、護照章與「上次造訪後的新內容」只存在你這台裝置的瀏覽器裡（localStorage），本站沒有後端，不會收到這些資料。</li>
