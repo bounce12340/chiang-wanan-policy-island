@@ -1,4 +1,4 @@
-// 小遊戲：遊戲大廳、排排看（時間順序）、這是哪位市長做的、每日一題、施政島護照（集章）。
+// 小遊戲：遊戲大廳、排排看（時間順序）、這是哪位市長做的、每日一題、數字猜猜看、施政島護照（集章）。
 // 題目全部取自站上已查證的資料，答完都附日期與來源；不出自編的假敘述。
 import { read, write } from './store.js';
 import { PLEDGE_STATUS } from './pledges.js';
@@ -22,7 +22,7 @@ export function initGames(ctx) {
   dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
   dlg.addEventListener('close', () => {
     ctx.pause?.(false);
-    if (/^#\/(games|sort|whomayor|daily|passport|cpr)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (/^#\/(games|sort|whomayor|daily|passport|cpr|numbers)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   });
   function open(title, hash) {
     head.textContent = title;
@@ -52,6 +52,8 @@ export function initGames(ctx) {
     { id: 'game:sort', label: '排排看', kind: '遊戲', n: '序' },
     { id: 'game:mayor', label: '哪位市長', kind: '遊戲', n: '長' },
     { id: 'game:daily', label: '每日一題', kind: '遊戲', n: '日' },
+    { id: 'game:numbers', label: '數字猜猜看', kind: '遊戲', n: '數' },
+    { id: 'game:photo', label: '施政島明信片', kind: '遊戲', n: '拍' },
   ];
   const islandIds = STAMPS.filter((s) => s.kind === '島').map((s) => s.id);
   const got = () => read('passport', {});
@@ -97,7 +99,7 @@ export function initGames(ctx) {
         const [k, v] = st.split(':');
         if (k === 'isle') { ctx.setView('island'); ctx.openTheme(v); }
         else if (k === 'view') ctx.setView(v);
-        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily })[v]();
+        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto })[v]();
         return;
       }
       if (e.target.closest('[data-pp="share"]')) {
@@ -116,22 +118,26 @@ export function initGames(ctx) {
     const doneToday = !!d.log[taipeiDay()];
     const g = got();
     const n = STAMPS.filter((s) => g[s.id]).length;
+    const best = read('numbers', { best: 0 }).best;
     const card = (key, emoji, title, desc, extra = '') => `<button type="button" class="gm-card" data-game="${key}"><b>${emoji}</b><span><strong>${title}</strong><small>${desc}</small></span>${extra}</button>`;
     body.innerHTML = `
       <p class="sv-note">每一題都取自本站已查證的資料，答完會附日期與來源。</p>
       <div class="gm-cards">
         ${card('daily', '📅', '每日一題', `每天一題，大家同一題${d.streak ? `・已連續 ${d.streak} 天` : ''}`, doneToday ? '<em class="gm-tag">今天已答</em>' : '<em class="gm-tag is-hot">今天還沒答</em>')}
+        ${card('numbers', '🔢', '數字猜猜看', '社宅幾戶？滯洪幾萬噸？拉滑桿猜數字，越接近分數越高', best ? `<em class="gm-tag">最高 ${best} 分</em>` : '')}
         ${card('quiz', '🎯', '政見猜猜看', '10 條 2022 政見，猜猜查證後的狀態')}
-        ${card('sort', '🔢', '排排看', '把 5 件施政大事依發生先後排好')}
+        ${card('sort', '↕️', '排排看', '把 5 件施政大事依發生先後排好')}
         ${card('mayor', '🏛️', '這是哪位市長做的？', '1994 年以來五任市長，每人各 2 題')}
         ${card('cpr', '❤️', '按壓節奏挑戰', '跟著節奏按 10 秒，記住 CPR 每分鐘 100–120 下')}
+        ${card('photo', '📷', '施政島明信片', '轉到喜歡的角度按快門，做一張可以分享的明信片')}
         ${card('passport', '🛂', '施政島護照', '逛島、看專題、玩遊戲就蓋章', `<em class="gm-tag">${n}/${STAMPS.length}</em>`)}
       </div>`;
     body.onclick = (e) => {
       const k = e.target.closest('[data-game]')?.dataset.game;
       if (!k) return;
       if (k === 'quiz') { dlg.close(); ctx.openQuiz(); return; }
-      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr })[k]();
+      if (k === 'photo') { dlg.close(); ctx.openPhoto(); return; }
+      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr, numbers: openNumbers })[k]();
     };
   }
 
@@ -363,6 +369,94 @@ export function initGames(ctx) {
   }
 
   // =========================================================
+  // 數字猜猜看：拉滑桿猜施政數字，越接近分數越高（每局 5 題，每題 100 分）
+  // 題庫在 data/numbers.json，答案都對應 policies.json 某一句查證過的 facts
+  // =========================================================
+  let numberBank = null;
+  async function loadNumbers() {
+    if (numberBank) return numberBank;
+    const res = await fetch('./data/numbers.json', { cache: 'no-cache' });
+    const raw = await res.json();
+    const byItem = new Map(allItems.map((i) => [i.id, i]));
+    numberBank = raw.items.map((q) => {
+      const it = byItem.get(q.item);
+      const fact = it?.facts.find((f) => f.includes(q.match));
+      return it && fact ? { ...q, it, fact } : null;
+    }).filter(Boolean);
+    return numberBank;
+  }
+  const fmtNum = (v) => Number(v).toLocaleString('zh-TW', { maximumFractionDigits: 2 });
+  // 誤差 5% 以內滿分；之後依相對誤差遞減，差一倍以上 0 分
+  const numberScore = (g, a) => { const e = Math.abs(g - a) / Math.abs(a); return e <= 0.05 ? 100 : Math.max(0, Math.round(100 * (1 - e))); };
+  async function openNumbers() {
+    open('數字猜猜看', 'numbers');
+    const bank = await loadNumbers();
+    const qs = shuffle([...bank]).slice(0, 5);
+    const st = { k: 0, guesses: [] };
+    const draw = () => {
+      if (st.k >= qs.length) {
+        const total = qs.reduce((t, q, n) => t + numberScore(st.guesses[n], q.a), 0);
+        const rec = read('numbers', { best: 0, plays: 0 });
+        const isBest = total > (rec.best || 0);
+        write('numbers', { best: Math.max(rec.best || 0, total), plays: (rec.plays || 0) + 1 });
+        stamp('game:numbers');
+        body.dataset.score = total;
+        const rank = total >= 450 ? '市政活字典' : total >= 350 ? '資深里長' : total >= 200 ? '熱心市民' : '新手市民';
+        body.innerHTML = `<p class="qz-score"><b>${total}</b><span>/ 500 分</span></p>
+          <p class="qz-ask">稱號：<b>${rank}</b>${isBest ? '・🎉 新的最高分' : `・你的最高分 ${Math.max(rec.best || 0, total)}`}</p>
+          <ol class="nm-review">${qs.map((q, n) => `<li><span>${esc(q.q)}</span><small>你猜 ${fmtNum(st.guesses[n])}・答案 ${fmtNum(q.a)} ${esc(q.unit)}・${numberScore(st.guesses[n], q.a)} 分</small></li>`).join('')}</ol>
+          <div class="sv-actions"><button type="button" class="cta" data-n="again">再玩一局</button><button type="button" class="cta cta-2" data-n="share">分享成績</button><button type="button" class="cta cta-2" data-n="more">玩其他遊戲</button></div>`;
+        return;
+      }
+      const q = qs[st.k];
+      const g = st.guesses[st.k];
+      const answered = g !== undefined;
+      const start = answered ? g : Math.round((q.max / 2) / q.step) * q.step;
+      const sc = answered ? numberScore(g, q.a) : 0;
+      body.innerHTML = `<p class="qz-step">第 ${st.k + 1} / ${qs.length} 題・${esc(q.it.theme.name)} <span class="qz-dots">${qs.map((_, n) => `<i class="${n < st.k ? (numberScore(st.guesses[n], qs[n].a) >= 60 ? 'ok' : 'no') : n === st.k ? 'cur' : ''}"></i>`).join('')}</span></p>
+        <p class="qz-ask nm-q">${esc(q.q)}</p>
+        <div class="nm-box">
+          <output class="nm-out"><b>${fmtNum(start)}</b> ${esc(q.unit)}</output>
+          <div class="nm-track"><input type="range" class="nm-range" min="0" max="${q.max}" step="${q.step}" value="${start}" aria-label="你的猜測" ${answered ? 'disabled' : ''}>
+            ${answered ? `<i class="nm-ans" style="left:${(q.a / q.max) * 100}%"><em>答案 ${fmtNum(q.a)}</em></i>` : ''}</div>
+          <div class="nm-scale"><span>0</span><span>${fmtNum(q.max)} ${esc(q.unit)}</span></div>
+          ${answered ? '' : `<div class="nm-fine"><button type="button" data-f="-1" aria-label="減少">−</button><input type="number" inputmode="decimal" min="0" max="${q.max}" step="${q.step}" value="${start}" class="nm-num" aria-label="直接輸入數字"><button type="button" data-f="1" aria-label="增加">＋</button></div>`}
+        </div>
+        ${answered ? `<div class="qz-reveal" role="status"><p><b>${sc === 100 ? '神準！' : sc >= 60 ? '很接近了。' : '差了一些。'}</b>答案是 <b>${fmtNum(q.a)} ${esc(q.unit)}</b>，你猜 ${fmtNum(g)}，得 <b>${sc}</b> 分。</p>
+          <p class="nm-fact">「${esc(q.it.title)}」：${esc(q.fact)}</p><div class="sources">${srcLink(q.it.sources?.[0])}</div></div>
+          <div class="sv-actions"><button type="button" class="cta" data-n="next">${st.k + 1 < qs.length ? '下一題 →' : '看總分'}</button><button type="button" class="cta cta-2" data-n="go">看這項施政</button></div>`
+        : '<div class="sv-actions"><button type="button" class="cta" data-n="lock">就猜這個數字</button></div>'}
+        <p class="qz-note">誤差 5% 以內得滿分，差一倍以上 0 分。數字以本站資料記錄的說法為準（市府或報導說法已在原句註明）。</p>`;
+      const range = body.querySelector('.nm-range'), num = body.querySelector('.nm-num'), out = body.querySelector('.nm-out b');
+      const set = (v) => {
+        const x = Math.min(q.max, Math.max(0, Math.round(v / q.step) * q.step));
+        const val = +x.toFixed(2);
+        range.value = val; if (num && document.activeElement !== num) num.value = val; out.textContent = fmtNum(val);
+      };
+      range.oninput = () => set(+range.value);
+      if (num) num.oninput = () => { if (num.value !== '') { range.value = num.value; out.textContent = fmtNum(+range.value); } };
+      body.dataset.cur = String(st.k);
+    };
+    draw();
+    body.onclick = (e) => {
+      const f = e.target.closest('[data-f]');
+      if (f) {
+        const q = qs[st.k], range = body.querySelector('.nm-range');
+        const v = Math.min(q.max, Math.max(0, +range.value + +f.dataset.f * q.step));
+        range.value = +v.toFixed(2); range.dispatchEvent(new Event('input'));
+        return;
+      }
+      const n = e.target.closest('[data-n]')?.dataset.n;
+      if (n === 'lock') { st.guesses[st.k] = +body.querySelector('.nm-range').value; draw(); }
+      if (n === 'next') { st.k++; draw(); }
+      if (n === 'again') openNumbers();
+      if (n === 'more') openHub();
+      if (n === 'go') { const it = qs[st.k].it; dlg.close(); ctx.setView('island'); ctx.openTheme(it.theme.id, it.id); }
+      if (n === 'share') share('數字猜猜看｜臺北施政島', `我在「臺北施政島」數字猜猜看拿到 ${body.dataset.score}/500 分，你猜得比我準嗎？`, 'numbers');
+    };
+  }
+
+  // =========================================================
   // 按壓節奏挑戰：跟著節拍按 10 秒，看速度有沒有落在每分鐘 100–120 下
   // （依臺北市消防局「叫、叫、壓、電」：每分鐘 100–120 次、每秒約 2 次）
   // =========================================================
@@ -435,5 +529,5 @@ export function initGames(ctx) {
   }
 
   syncPassportBtn();
-  return { openHub, openSort, openMayor, openDaily, openPassport, openCpr, stamp };
+  return { openHub, openSort, openMayor, openDaily, openPassport, openCpr, openNumbers, stamp };
 }

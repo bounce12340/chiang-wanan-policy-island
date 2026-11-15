@@ -12,6 +12,7 @@ import { loadMayors, renderMayors } from './mayors.js';
 import { loadLedger, renderLedger } from './ledger.js';
 import { initExtras } from './extras.js';
 import { initGames } from './games.js';
+import { initPhoto } from './photo.js';
 const REPO_URL = 'https://github.com/bounce12340/chiang-wanan-policy-island';
 
 const $ = (sel) => document.querySelector(sel);
@@ -924,10 +925,15 @@ async function boot() {
     esc, fmtDate, toast, STATUS, allItems, themes,
     setView, openTheme, loadPledges, loadMayors,
     openQuiz: () => extras.openQuiz(),
+    openPhoto: () => photo?.enter(),
     pause: (p) => world?.setPaused(p || view !== 'island'),
     openPledge: (id) => { setView('pledges'); ensurePledges().then(() => focusPledge(pledgesRoot, id)); history.replaceState(null, '', `#/pledges/${id}`); },
   });
   $('#btn-games').addEventListener('click', () => games.openHub());
+  const photo = initPhoto({
+    world, toast, setView, view: () => view, stamp: (k) => games.stamp(k),
+    getTheme: () => (currentTheme ? byId.get(currentTheme) : null),
+  });
   new Promise((r) => whenIdle(r)).then(() => extras.checkFresh());
 
   // ---------- deep link ----------
@@ -941,6 +947,8 @@ async function boot() {
     if (id === 'daily') { games.openDaily(); return; }
     if (id === 'passport') { games.openPassport(); return; }
     if (id === 'cpr') { games.openCpr(); return; }
+    if (id === 'numbers') { games.openNumbers(); return; }
+    if (id === 'photo') { hideHero(); photo.enter(); return; }
     if (id === 'who') { extras.setWho(itemId); return; }
     if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
     if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }

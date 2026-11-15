@@ -1001,3 +1001,44 @@ body:has(.who-bar:not([hidden])) .overlay-view { padding-top: 150px; }
 .cpr-pad.is-hit { animation: cpr-hit .16s ease-out; }
 @keyframes cpr-hit { 50% { transform: scale(.92); } }
 .cpr-guide { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+
+/* ---------- 數字猜猜看 ---------- */
+.nm-q { font-size: 17px; font-weight: 700; }
+.nm-box { position: relative; margin: 14px 0 6px; padding: 16px 14px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-2); }
+.nm-out { display: block; text-align: center; font-size: 15px; color: var(--ink-soft); margin-bottom: 8px; }
+.nm-out b { font: 700 40px/1 var(--font-num); color: var(--ink); }
+.nm-range { width: 100%; accent-color: var(--st-pledge); height: 28px; }
+.nm-scale { display: flex; justify-content: space-between; font: 12px var(--font-num); color: var(--ink-soft); }
+.nm-fine { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+.nm-fine button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-size: 20px; cursor: pointer; }
+.nm-num { width: 120px; height: 40px; text-align: center; font: 700 18px var(--font-num); border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
+.nm-track { position: relative; margin-top: 22px; }
+.nm-ans { position: absolute; top: -4px; width: 3px; height: 36px; margin-left: -1.5px; background: var(--st-done); border-radius: 2px; pointer-events: none; }
+.nm-ans em { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 700 11.5px var(--font); font-style: normal; color: #fff; background: var(--st-done); padding: 2px 6px; border-radius: 4px; }
+.nm-fact { font-size: 13.5px; line-height: 1.7; color: var(--ink-soft); margin: 8px 0 4px; }
+.nm-review { margin: 10px 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; }
+.nm-review li { margin-bottom: 6px; }
+.nm-review small { display: block; color: var(--ink-soft); }
+
+/* ---------- 拍照模式＋明信片 ---------- */
+body.photo-mode .topbar, body.photo-mode .hero, body.photo-mode .index, body.photo-mode .legend, body.photo-mode .layer,
+body.photo-mode .timebar, body.photo-mode .panel, body.photo-mode .who-bar, body.photo-mode .footnote, body.photo-mode .pledge-pop,
+body.photo-mode .tooltip, body.photo-mode .isle-label, body.photo-mode .center-label, body.photo-mode .district-label,
+body.photo-mode .hotspot-pill { display: none !important; }
+.photo-ui { position: fixed; left: 50%; bottom: calc(14px + var(--safe-b, 0px)); transform: translateX(-50%); z-index: 40;
+  width: min(560px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--paper) 92%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18); backdrop-filter: blur(8px); }
+.photo-tip { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-soft); text-align: center; }
+.photo-lines { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.photo-lines button { flex: none; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 10px; font: 500 12.5px var(--font); cursor: pointer; }
+.photo-lines button[aria-pressed="true"] { border-color: var(--st-pledge); background: color-mix(in srgb, var(--st-pledge) 12%, var(--paper)); }
+.photo-cap { display: block; margin: 8px 0; font-size: 12px; color: var(--ink-soft); }
+.photo-cap input { display: block; width: 100%; margin-top: 4px; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: 500 15px var(--font); }
+.photo-btns { display: flex; align-items: center; justify-content: space-between; }
+.photo-shutter { width: 64px; height: 64px; border-radius: 50%; border: 4px solid var(--ink); background: transparent; padding: 4px; cursor: pointer; }
+.photo-shutter i { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--st-pledge); transition: transform .1s; }
+.photo-shutter:active i { transform: scale(.88); }
+.photo-btns::after { content: ""; width: 72px; }
+body.photo-flash::after { content: ""; position: fixed; inset: 0; background: #fff; z-index: 60; animation: photo-flash .35s ease-out forwards; pointer-events: none; }
+@keyframes photo-flash { from { opacity: .9; } to { opacity: 0; } }
+.sheet-photo img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, .15); margin: 8px 0; }

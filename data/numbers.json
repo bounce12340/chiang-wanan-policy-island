@@ -1,0 +1,27 @@
+{
+  "note": "數字猜猜看題庫：每題的答案都取自 policies.json 該項目的 facts（match 為該句中的一段文字），揭曉時直接顯示原句與來源。",
+  "items": [
+    { "item": "transport-wanda", "match": "9.5 公里", "q": "捷運萬大線第一期全長約幾公里？", "a": 9.5, "unit": "公里", "max": 30, "step": 0.5 },
+    { "item": "transport-circular-east", "match": "13.25 公里", "q": "捷運環狀線東環段規劃設幾座車站？", "a": 10, "unit": "站", "max": 30, "step": 1 },
+    { "item": "transport-bus", "match": "1,080 處", "q": "2026 年完成幾處公車站紅線延伸至少 5 公尺？", "a": 1080, "unit": "處", "max": 3000, "step": 10 },
+    { "item": "development-songshan", "match": "約 300 公頃", "q": "松山機場遷移後的規劃範圍約幾公頃？", "a": 300, "unit": "公頃", "max": 1000, "step": 10 },
+    { "item": "industry-nvidia-sign", "match": "權利金 122 億元", "q": "輝達北士科地上權契約的權利金是多少億元？", "a": 122, "unit": "億元", "max": 500, "step": 1 },
+    { "item": "housing-social", "match": "2 萬 4,860 戶", "q": "市長 2026-10-06 表示，北市社會住宅共有幾戶？", "a": 24860, "unit": "戶", "max": 60000, "step": 100 },
+    { "item": "family-birth", "match": "第 1 胎 4 萬", "q": "北市生育獎勵，第 1 胎是幾萬元？", "a": 4, "unit": "萬元", "max": 10, "step": 0.5 },
+    { "item": "family-lunch", "match": "國小 87 元", "q": "免費營養午餐，國小每餐補助幾元？", "a": 87, "unit": "元", "max": 200, "step": 1 },
+    { "item": "family-lunch", "match": "18 萬名", "q": "免費營養午餐預計約幾萬名學生受惠？", "a": 18, "unit": "萬名", "max": 60, "step": 1 },
+    { "item": "family-teachers", "match": "303 名", "q": "2026-08-01 起，北市公立國中小增置幾名行政人力？", "a": 303, "unit": "名", "max": 1000, "step": 1 },
+    { "item": "family-ai-edu", "match": "92 億元", "q": "北市 4 年投入幾億元推動 AI 教育？", "a": 92, "unit": "億元", "max": 300, "step": 1 },
+    { "item": "care-ltc", "match": "83 家", "q": "到 2026 年 5 月，北市老人日照中心有幾家？", "a": 83, "unit": "家", "max": 300, "step": 1 },
+    { "item": "care-smokefree", "match": "267 處", "q": "到 2026 年 8 月，北市指定吸菸區有幾處？", "a": 267, "unit": "處", "max": 1000, "step": 1 },
+    { "item": "safety-flood", "match": "3.2 萬噸", "q": "北市首座地下管涵式滯洪設施，滯洪量是幾萬噸？", "a": 3.2, "unit": "萬噸", "max": 20, "step": 0.1 },
+    { "item": "safety-first-aid", "match": "73.9%", "q": "截至 2026-10-22，北市府第一線員工完成急救實體訓練的比例是幾％？", "a": 73.9, "unit": "%", "max": 100, "step": 0.1 },
+    { "item": "environment-waste", "match": "66%", "q": "市長表示，北市回收率由 2% 提升到幾％？", "a": 66, "unit": "%", "max": 100, "step": 1 },
+    { "item": "environment-carbon", "match": "19.39%", "q": "北市 2024 年碳排放比 2005 年減少了幾％？", "a": 19.39, "unit": "%", "max": 100, "step": 0.1 },
+    { "item": "environment-air", "match": "17 處", "q": "北市空氣品質維護區增加到幾處？", "a": 17, "unit": "處", "max": 60, "step": 1 },
+    { "item": "intl-sister-cities", "match": "53 個城市", "q": "臺北市至今與幾個城市締結姊妹市？", "a": 53, "unit": "個城市", "max": 150, "step": 1 },
+    { "item": "intl-marathon", "match": "4,380 位", "q": "2024 臺北馬拉松的國際跑者有幾位？", "a": 4380, "unit": "位", "max": 10000, "step": 10 },
+    { "item": "culture-masters", "match": "2 萬 5,746 人", "q": "2025 雙北世界壯年運動會報名幾人？", "a": 25746, "unit": "人", "max": 60000, "step": 100 },
+    { "item": "housing-public-renewal", "match": "23 處", "q": "北市有幾處老舊整建住宅（整宅）？", "a": 23, "unit": "處", "max": 100, "step": 1 }
+  ]
+}

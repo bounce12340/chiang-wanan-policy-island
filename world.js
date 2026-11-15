@@ -2222,5 +2222,7 @@ export function createWorld({ container, themes, onSelectTheme, onSelectItem, on
     setPaused, flashItem, showVignette, hideVignette: disposeStage, labelLayer: labelRenderer.domElement,
     setPledges, setPledgeMode, getPledgeMode: () => pledge.on, setLinks, setLinkMode, setFuture, setFutureMode,
     quake: startQuake,
+    // 拍照模式：立刻畫一格並回傳畫布；呼叫端必須在同一個工作階段內讀取像素（未開 preserveDrawingBuffer）
+    snapshot: () => { scene.updateMatrixWorld(); renderer.render(scene, camera); return renderer.domElement; },
   };
 }

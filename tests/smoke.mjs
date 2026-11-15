@@ -135,6 +135,24 @@ for (const [name, opts] of [
   await page.waitForFunction(() => document.querySelectorAll('#game [data-d]').length >= 2, null, { timeout: 8000 });
   await page.evaluate(() => document.querySelector('#game [data-d]').click());
   check(/連續作答 1 天/.test(await page.$eval('#game .gm-streak', (e) => e.textContent)), `${name}: 每日一題作答後記錄連續天數`);
+  // 數字猜猜看：5 題鎖定答案後出現總分，揭曉時附原句
+  await page.evaluate(() => { location.hash = '#/numbers'; });
+  await page.waitForSelector('#game .nm-range', { timeout: 8000 });
+  let factOk = true;
+  for (let k = 0; k < 5; k++) {
+    await page.evaluate(() => document.querySelector('#game [data-n="lock"]').click());
+    factOk &&= await page.$eval('#game .nm-fact', (e) => e.textContent.length > 8).catch(() => false);
+    await page.evaluate(() => document.querySelector('#game [data-n="next"]').click());
+  }
+  check(factOk && /\/ 500 分/.test(await page.$eval('#game .qz-score', (e) => e.textContent).catch(() => '')), `${name}: 數字猜猜看可完成 5 題並計分`);
+  await page.keyboard.press('Escape');
+  // 拍照模式：收起介面、按快門產生明信片圖片
+  await page.evaluate(() => { location.hash = '#/photo'; });
+  await page.waitForFunction(() => document.body.classList.contains('photo-mode'), null, { timeout: 5000 });
+  await page.evaluate(() => document.querySelector('[data-ph="shoot"]').click());
+  await page.waitForFunction(() => document.querySelector('#photo-card').open && document.querySelector('#photo-img').naturalWidth > 500, null, { timeout: 15000 }).catch(() => {});
+  check(await page.$eval('#photo-img', (e) => e.naturalWidth) > 500 && !(await page.evaluate(() => document.body.classList.contains('photo-mode'))), `${name}: 拍照模式可產生明信片`);
+  await page.keyboard.press('Escape');
   await page.evaluate(() => { location.hash = '#/passport'; });
   await page.waitForSelector('#game .pp-stamp.is-on', { timeout: 5000 });
   check(await page.$$eval('#game .pp-stamp.is-on', (e) => e.length) >= 5, `${name}: 護照已蓋章（島、頁、遊戲）`);
