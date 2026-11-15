@@ -926,7 +926,7 @@ async function boot() {
   extras.decorate(document);
   games = initGames({
     esc, fmtDate, toast, STATUS, allItems, themes,
-    setView, openTheme, loadPledges, loadMayors,
+    setView, openTheme, loadPledges, loadMayors, loadLedger,
     openQuiz: () => extras.openQuiz(),
     openPhoto: () => photo?.enter(),
     openHunt: () => hunt?.start(),
@@ -960,6 +960,7 @@ async function boot() {
     if (id === 'numbers') { games.openNumbers(); return; }
     if (id === 'photo') { hideHero(); photo.enter(); return; }
     if (id === 'hunt') { hunt.start(); return; }
+    if (id === 'budget') { games.openBudget(); return; }
     if (id === 'who') { extras.setWho(itemId); return; }
     if (id === 'saved') { extras.openSaved(itemId ? decodeURIComponent(itemId).split(',') : null); return; }
     if (id === 'search') { extras.openFinder(itemId ? decodeURIComponent(itemId) : ''); return; }

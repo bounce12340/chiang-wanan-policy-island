@@ -22,7 +22,7 @@ export function initGames(ctx) {
   dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
   dlg.addEventListener('close', () => {
     ctx.pause?.(false);
-    if (/^#\/(games|sort|whomayor|daily|passport|cpr|numbers)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (/^#\/(games|sort|whomayor|daily|passport|cpr|numbers|budget)/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
   });
   function open(title, hash) {
     head.textContent = title;
@@ -55,6 +55,7 @@ export function initGames(ctx) {
     { id: 'game:numbers', label: '數字猜猜看', kind: '遊戲', n: '數' },
     { id: 'game:photo', label: '施政島明信片', kind: '遊戲', n: '拍' },
     { id: 'game:hunt', label: '島上尋寶', kind: '遊戲', n: '寶' },
+    { id: 'game:budget', label: '如果我是市長', kind: '遊戲', n: '帥' },
   ];
   const islandIds = STAMPS.filter((s) => s.kind === '島').map((s) => s.id);
   const got = () => read('passport', {});
@@ -100,7 +101,7 @@ export function initGames(ctx) {
         const [k, v] = st.split(':');
         if (k === 'isle') { ctx.setView('island'); ctx.openTheme(v); }
         else if (k === 'view') ctx.setView(v);
-        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto, hunt: ctx.openHunt })[v]();
+        else ({ quiz: ctx.openQuiz, sort: openSort, mayor: openMayor, daily: openDaily, numbers: openNumbers, photo: ctx.openPhoto, hunt: ctx.openHunt, budget: openBudget })[v]();
         return;
       }
       if (e.target.closest('[data-pp="share"]')) {
@@ -130,6 +131,7 @@ export function initGames(ctx) {
         ${card('sort', '↕️', '排排看', '把 5 件施政大事依發生先後排好')}
         ${card('mayor', '🏛️', '這是哪位市長做的？', '1994 年以來五任市長，每人各 2 題')}
         ${card('cpr', '❤️', '按壓節奏挑戰', '跟著節奏按 10 秒，記住 CPR 每分鐘 100–120 下')}
+        ${card('budget', '🏛️', '如果我是市長', '100 億元（虛擬）分給 12 種市民，看看你的施政風格')}
         ${card('hunt', '🔍', '島上尋寶', `每座島都藏了小道具，共 12 個，點到就解鎖一項施政`, `<em class="gm-tag">${ctx.huntCount?.() ?? 0}/12</em>`)}
         ${card('photo', '📷', '施政島明信片', '轉到喜歡的角度按快門，做一張可以分享的明信片')}
         ${card('passport', '🛂', '施政島護照', '逛島、看專題、玩遊戲就蓋章', `<em class="gm-tag">${n}/${STAMPS.length}</em>`)}
@@ -140,7 +142,7 @@ export function initGames(ctx) {
       if (k === 'quiz') { dlg.close(); ctx.openQuiz(); return; }
       if (k === 'photo') { dlg.close(); ctx.openPhoto(); return; }
       if (k === 'hunt') { dlg.close(); ctx.openHunt(); return; }
-      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr, numbers: openNumbers })[k]();
+      ({ daily: openDaily, sort: openSort, mayor: openMayor, passport: openPassport, cpr: openCpr, numbers: openNumbers, budget: openBudget })[k]();
     };
   }
 
@@ -460,6 +462,80 @@ export function initGames(ctx) {
   }
 
   // =========================================================
+  // 如果我是市長：把 100 億元（虛擬）分給 12 種市民，再對照市府任內為各群組「新設或調高」的措施數。
+  // 對照的是民生帳本收錄的措施「件數」占比，不是預算金額；結果頁會講清楚。
+  // =========================================================
+  const STYLE = {
+    pregnancy: ['催生派市長', '把資源押在生養第一關'], toddler: ['育兒友善派市長', '讓爸媽養得起 0–6 歲'],
+    student: ['教育投資派市長', '把錢花在下一代的學習'], youth: ['青年築夢派市長', '幫年輕人找房、找工作、找機會'],
+    adult: ['拚經濟派市長', '照顧每天上班的中堅世代'], senior: ['銀髮照護派市長', '讓長輩在地安老'],
+    disability: ['無障礙派市長', '把城市的門檻降下來'], indigenous: ['多元共融派市長', '照顧都市原住民族群'],
+    lowincome: ['社會安全網派市長', '先把最弱勢的人接住'], singleparent: ['家庭支持派市長', '單親、多胞胎家庭不孤單'],
+    commuters: ['交通建設派市長', '讓通勤更快更省'], pets: ['毛孩友善派市長', '人與寵物都住得舒服'],
+  };
+  async function openBudget() {
+    open('如果我是市長', 'budget');
+    const ld = await ctx.loadLedger();
+    const groups = ld.groups.map((g) => ({ id: g.id, name: g.group.replace(/（.*?）/g, ''), full: g.group,
+      ups: g.items.filter((i) => ['新設', '增加'].includes(i.direction)).length }));
+    const TOTAL = 100;
+    const alloc = Object.fromEntries(groups.map((g) => [g.id, 0]));
+    const used = () => Object.values(alloc).reduce((a, b) => a + b, 0);
+    const drawForm = () => {
+      body.innerHTML = `<p class="qz-ask">假設你是臺北市長，手上有 <b>100 億元</b>（虛擬）可以加碼照顧市民。你會怎麼分？分完會對照市府任內真正為各群組新設或調高了幾項措施。</p>
+        <p class="bg-left" aria-live="polite">還剩 <b>${TOTAL - used()}</b> 億元</p>
+        <ul class="bg-list">${groups.map((g) => `<li><label for="bg-${g.id}">${esc(g.name)}</label>
+          <input type="range" id="bg-${g.id}" data-bg="${g.id}" min="0" max="${TOTAL}" step="5" value="${alloc[g.id]}"><output>${alloc[g.id]}</output></li>`).join('')}</ul>
+        <div class="sv-actions"><button type="button" class="cta" data-b="done" ${used() === TOTAL ? '' : 'disabled'}>${used() === TOTAL ? '看我的施政風格' : `再分配 ${TOTAL - used()} 億元`}</button><button type="button" class="cta cta-2" data-b="even">大致平均</button><button type="button" class="cta cta-2" data-b="reset">歸零</button></div>
+        <p class="qz-note">滑桿每格 5 億元，總和不能超過 100 億元。這是想像遊戲，不代表真實預算規模。</p>`;
+    };
+    const sync = () => {
+      body.querySelectorAll('[data-bg]').forEach((r) => { r.value = alloc[r.dataset.bg]; r.nextElementSibling.textContent = alloc[r.dataset.bg]; });
+      body.querySelector('.bg-left b').textContent = TOTAL - used();
+      const done = body.querySelector('[data-b="done"]');
+      done.disabled = used() !== TOTAL;
+      done.textContent = used() === TOTAL ? '看我的施政風格' : `再分配 ${TOTAL - used()} 億元`;
+    };
+    const drawResult = () => {
+      const upsTotal = groups.reduce((a, g) => a + g.ups, 0);
+      const rows = groups.map((g) => ({ ...g, mine: alloc[g.id], city: upsTotal ? Math.round((g.ups / upsTotal) * 100) : 0 }));
+      const overlap = Math.round(rows.reduce((a, r) => a + Math.min(r.mine, (r.ups / upsTotal) * 100), 0));
+      const top = [...rows].sort((a, b) => b.mine - a.mine);
+      const [title, line] = STYLE[top[0].id] || ['全方位市長', '每一種市民都照顧到'];
+      const balanced = top[0].mine <= 20;
+      const cityTop = [...rows].sort((a, b) => b.ups - a.ups).slice(0, 2);
+      stamp('game:budget');
+      body.dataset.style = balanced ? '雨露均霑派市長' : title;
+      body.dataset.overlap = overlap;
+      body.innerHTML = `<div class="bg-card"><small>我的施政風格</small><strong>${esc(balanced ? '雨露均霑派市長' : title)}</strong><span>${esc(balanced ? '每一種市民都分到一點，沒有明顯偏重' : line)}</span>
+          <p>最重視：${top.slice(0, 3).filter((r) => r.mine).map((r) => `${esc(r.name)} ${r.mine} 億`).join('、')}</p></div>
+        <p class="qz-ask">跟市府任內的實際作為比，重疊度 <b>${overlap}%</b>。市府新設或調高最多措施的是「${esc(cityTop[0].name)}」（${cityTop[0].ups} 項）和「${esc(cityTop[1].name)}」（${cityTop[1].ups} 項）。</p>
+        <ul class="bg-bars">${rows.map((r) => `<li><span>${esc(r.name)}</span><div><i class="me" style="width:${r.mine}%"></i><i class="city" style="width:${r.city}%"></i></div><small>你 ${r.mine}%・市府 ${r.ups} 項（${r.city}%）</small></li>`).join('')}</ul>
+        <p class="bg-legend"><i class="me"></i>你的分配　<i class="city"></i>市府任內新設或調高的措施件數占比</p>
+        <p class="qz-note">「市府」一欄是民生帳本收錄的市府自辦措施中，屬於新設或增加的件數占比（共 ${upsTotal} 項，同一項可能同時照顧多個群組），不是預算金額；件數多不代表花的錢多。</p>
+        <div class="sv-actions"><button type="button" class="cta" data-b="share">分享我的風格</button><button type="button" class="cta cta-2" data-b="ledger">看民生帳本</button><button type="button" class="cta cta-2" data-b="again">重新分配</button></div>`;
+    };
+    drawForm();
+    body.oninput = (e) => {
+      const r = e.target.closest('[data-bg]');
+      if (!r) return;
+      const others = used() - alloc[r.dataset.bg];
+      alloc[r.dataset.bg] = Math.min(+r.value, TOTAL - others); // 超過總額就停在剩餘額度
+      sync();
+    };
+    body.onclick = (e) => {
+      const b = e.target.closest('[data-b]')?.dataset.b;
+      // 100 不能被 12 整除（每格 5 億），所以前 8 組各 10 億、後 4 組各 5 億
+      if (b === 'even') { groups.forEach((g, i) => { alloc[g.id] = i < 8 ? 10 : 5; }); sync(); }
+      if (b === 'reset') { groups.forEach((g) => { alloc[g.id] = 0; }); sync(); }
+      if (b === 'done' && used() === TOTAL) drawResult();
+      if (b === 'again') { groups.forEach((g) => { alloc[g.id] = 0; }); drawForm(); }
+      if (b === 'ledger') { dlg.close(); ctx.setView('ledger'); }
+      if (b === 'share') share('如果我是市長｜臺北施政島', `我在「臺北施政島」分配 100 億元（虛擬），結果是「${body.dataset.style}」，跟市府任內作為的重疊度 ${body.dataset.overlap}%。你是哪一派？`, 'budget');
+    };
+  }
+
+  // =========================================================
   // 按壓節奏挑戰：跟著節拍按 10 秒，看速度有沒有落在每分鐘 100–120 下
   // （依臺北市消防局「叫、叫、壓、電」：每分鐘 100–120 次、每秒約 2 次）
   // =========================================================
@@ -532,5 +608,5 @@ export function initGames(ctx) {
   }
 
   syncPassportBtn();
-  return { openHub, openSort, openMayor, openDaily, openPassport, openCpr, openNumbers, stamp };
+  return { openHub, openSort, openMayor, openDaily, openPassport, openCpr, openNumbers, openBudget, stamp };
 }

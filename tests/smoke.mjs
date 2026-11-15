@@ -146,6 +146,13 @@ for (const [name, opts] of [
   }
   check(factOk && /\/ 500 分/.test(await page.$eval('#game .qz-score', (e) => e.textContent).catch(() => '')), `${name}: 數字猜猜看可完成 5 題並計分`);
   await page.keyboard.press('Escape');
+  // 如果我是市長：大致平均分完 100 億元後出現風格卡與對照
+  await page.evaluate(() => { location.hash = '#/budget'; });
+  await page.waitForSelector('#game [data-bg]', { timeout: 8000 });
+  await page.evaluate(() => document.querySelector('#game [data-b="even"]').click());
+  await page.evaluate(() => document.querySelector('#game [data-b="done"]').click());
+  check(await page.$$eval('#game .bg-bars li', (e) => e.length) === 12 && /重疊度 \d+%/.test(await page.$eval('#game', (e) => e.textContent)), `${name}: 如果我是市長可分配並顯示對照`);
+  await page.keyboard.press('Escape');
   // 拍照模式：收起介面、按快門產生明信片圖片
   await page.evaluate(() => { location.hash = '#/photo'; });
   await page.waitForFunction(() => document.body.classList.contains('photo-mode'), null, { timeout: 5000 });
